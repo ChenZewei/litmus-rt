@@ -239,13 +239,17 @@ static noinline void unlink(struct task_struct* t)
 }
 
 static noinline int is_constrained(struct task_struct *task) {
-	int pid = task->pid;
-	int i, parallel_degree = 0;
-	for (i = 0; i < NR_CPUS; i++) {
-		if (NULL == cgedf_cpus[i]->linked) 
-			continue;
-		if (pid == cgedf_cpus[i]->linked->pid)
-			parallel_degree++;
+	cpu_entry_t *entry;
+	if(!task)
+		return 0;
+	int tgid = task->tgid;
+	int cpu, parallel_degree = 0;
+	for_each_online_cpu(cpu) {
+		entry = &per_cpu(cgedf_cpu_entries, cpu);
+		if (entry->scheduled != NULL) {
+			if (tgid == entry->scheduled->tgid)
+				parallel_degree++;
+		}
 	}
 	TRACE_TASK(task, "task PID:%d\n",task->pid);
 	TRACE_TASK(task, "task TGID:%d\n", task->tgid);
@@ -449,7 +453,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	np 	    = exists && is_np(entry->scheduled);
 	sleep	    = exists && is_completed(entry->scheduled);
 	preempt     = entry->scheduled != entry->linked;
-	// constrained = exists && is_constrained(entry->scheduled);
 
 #ifdef WANT_ALL_SCHED_EVENTS
 	TRACE_TASK(prev, "invoked cgedf_schedule.\n");
@@ -494,14 +497,16 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	if (!entry->linked)
 		link_task_to_cpu(__take_ready(&cgedf), entry);
 
-	// if (constrained)
-	// 	unlink(entry->scheduled);
+	// if (is_constrained(entry->linked))
+	// 	unlink(entry->linked);
 
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
 	if ((!np || blocks) &&
 	    entry->linked != entry->scheduled) {
+		
+		// constrained = exists && is_constrained(entry->scheduled);
 		/* Schedule a linked job? */
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
@@ -642,6 +647,7 @@ static void cgedf_task_exit(struct task_struct * t)
 
 static long cgedf_admit_task(struct task_struct* tsk)
 {
+	TRACE_TASK(tsk, "Admitting task[%d].\n", tsk->pid);
 	return 0;
 }
 
