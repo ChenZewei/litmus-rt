@@ -122,6 +122,10 @@ static struct bheap      cgedf_cpu_heap;
 static rt_domain_t cgedf;
 #define cgedf_lock (cgedf.ready_lock)
 
+#define MAX_CONSTRAINT 64
+
+static struct task_struct* constrained_set[MAX_CONSTRAINT];
+
 
 /* Uncomment this if you want to see all scheduling decisions in the
  * TRACE() log.
@@ -240,19 +244,37 @@ static noinline void unlink(struct task_struct* t)
 
 static noinline int is_constrained(struct task_struct *task) {
 	cpu_entry_t *entry;
+	int tgid, cpu;
+	int parallel_degree = 0;
 	if(!task)
 		return 0;
-	int tgid = task->tgid;
-	int cpu, parallel_degree = 0;
+	BUG_ON(!task);
+	tgid = task->tgid;
+
+	TRACE_TASK(task, "Checking constraint...\n");
+
+
+
+	
+
+
+	// for (cpu = 0; cpu < NR_CPUS; cpu++) {
 	for_each_online_cpu(cpu) {
 		entry = &per_cpu(cgedf_cpu_entries, cpu);
+		TRACE_TASK(task, "CPU[%d] is executing:", cpu);
 		if (entry->scheduled != NULL) {
+		TRACE_TASK(task, "task[PID %d TGID %d]\n", entry->scheduled->pid, entry->scheduled->tgid);
 			if (tgid == entry->scheduled->tgid)
 				parallel_degree++;
+		} else {
+		TRACE_TASK(task, "none.\n");
 		}
 	}
+
+
 	TRACE_TASK(task, "task PID:%d\n",task->pid);
 	TRACE_TASK(task, "task TGID:%d\n", task->tgid);
+	TRACE_TASK(task, "task PD:%d\n", parallel_degree);
 	TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);		
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
 	// return 0;
@@ -274,7 +296,8 @@ static noinline void requeue(struct task_struct* task)
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
-	if ((is_early_releasing(task) || is_released(task, litmus_clock())) && (!is_constrained(task)))
+	// if ((is_early_releasing(task) || is_released(task, litmus_clock())) && (!is_constrained(task)))
+	if (is_early_releasing(task) || is_released(task, litmus_clock()))
 		__add_ready(&cgedf, task);
 	else {
 		/* it has got to wait */
@@ -425,8 +448,10 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 {
 	cpu_entry_t* entry = this_cpu_ptr(&cgedf_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
+	int num_cons = 0;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
+	struct task_struct* temp = NULL;
 
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
@@ -494,17 +519,86 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 
 	/* Link pending task if we became unlinked.
 	 */
-	if (!entry->linked)
-		link_task_to_cpu(__take_ready(&cgedf), entry);
+	// if (!entry->linked){
+	// 	link_task_to_cpu(__take_ready(&cgedf), entry);
+	// }
 
-	// if (is_constrained(entry->linked))
-	// 	unlink(entry->linked);
+	if (!entry->linked) {
+		temp = __take_ready(&cgedf);
+		// link_task_to_cpu(temp, entry);
+	} else {
+		temp = entry->linked;
+	}
+
+	if (exists) {
+		// TRACE_TASK(temp, "branch 1.");
+		if (is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
+		// TRACE_TASK(temp, "branch 12.");
+			// requeue(temp);
+			constrained_set[num_cons++] = temp;
+			if (entry->linked)
+				unlink(temp);
+			temp =__take_ready(&cgedf);
+			while(is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
+				constrained_set[num_cons++] = temp;
+				// requeue(temp);
+				temp =__take_ready(&cgedf);
+			}
+			if (temp)
+				link_task_to_cpu(temp, entry);
+		} else {
+			if (!entry->linked)
+				link_task_to_cpu(temp, entry);
+		}
+	} else {
+		// TRACE_TASK(temp, "branch 2.");
+		if (is_constrained(temp)) {
+		// TRACE_TASK(temp, "branch 22.");
+			// requeue(temp);
+			constrained_set[num_cons++] = temp;
+			if (entry->linked)
+				unlink(temp);
+			temp =__take_ready(&cgedf);
+			while(is_constrained(temp)) {
+				constrained_set[num_cons++] = temp;
+				// requeue(temp);
+				temp =__take_ready(&cgedf);
+			}
+			if (temp)
+				link_task_to_cpu(temp, entry);
+		} else {
+			if (!entry->linked)
+				link_task_to_cpu(temp, entry);
+		}
+	}
+	
+	// if (is_constrained(temp)) {
+	// 	// requeue(temp);
+	// 	constrained_set[num_cons++] = temp;
+	// 	if (entry->linked)
+	// 		unlink(temp);
+	// 	temp =__take_ready(&cgedf);
+	// 	while(is_constrained(temp)) {
+	// 		constrained_set[num_cons++] = temp;
+	// 		// requeue(temp);
+	// 		temp =__take_ready(&cgedf);
+	// 	}
+	// 	if (temp)
+	// 		link_task_to_cpu(temp, entry);
+	// }
+
+	// if (is_constrained(entry->linked)) {
+	// 	struct task_struct* temp = entry->linked;
+	// 	unlink(temp);
+	// 	cgedf_job_arrival(temp);
+	// }
 
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
-	if ((!np || blocks) &&
-	    entry->linked != entry->scheduled) {
+  // NULL != entry->linked &&
+	if ((!np || blocks) && 
+	    entry->linked != entry->scheduled ) {
 		
 		// constrained = exists && is_constrained(entry->scheduled);
 		/* Schedule a linked job? */
@@ -524,6 +618,12 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 		 */
 		if (exists)
 			next = prev;
+
+	while(0 < num_cons--) {
+		BUG_ON(!constrained_set[num_cons]);
+		requeue(constrained_set[num_cons]);
+		constrained_set[num_cons] = NULL;
+	}
 
 	sched_state_task_picked();
 
