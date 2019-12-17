@@ -20,6 +20,7 @@
 #include <litmus/edf_common.h>
 #include <litmus/sched_trace.h>
 #include <litmus/trace.h>
+#include <litmus/parallel_degree.h>
 
 #include <litmus/preempt.h>
 #include <litmus/budget.h>
@@ -125,6 +126,11 @@ static rt_domain_t cgedf;
 #define MAX_CONSTRAINT 64
 
 static struct task_struct* constrained_set[MAX_CONSTRAINT];
+
+static pd_node cgedf_pd_stack[MAX_STACK_NUM];
+
+static pd_list cgedf_pd_list;
+
 
 
 /* Uncomment this if you want to see all scheduling decisions in the
@@ -243,8 +249,9 @@ static noinline void unlink(struct task_struct* t)
 }
 
 static noinline int is_constrained(struct task_struct *task) {
-	cpu_entry_t *entry;
-	int tgid, cpu;
+	// cpu_entry_t *entry;
+	// int tgid, cpu;
+	int tgid;
 	int parallel_degree = 0;
 	if(!task)
 		return 0;
@@ -253,24 +260,20 @@ static noinline int is_constrained(struct task_struct *task) {
 
 	TRACE_TASK(task, "Checking constraint...\n");
 
-
-
-	
-
+	parallel_degree = get_active_num(&cgedf_pd_list, tgid);
 
 	// for (cpu = 0; cpu < NR_CPUS; cpu++) {
-	for_each_online_cpu(cpu) {
-		entry = &per_cpu(cgedf_cpu_entries, cpu);
-		TRACE_TASK(task, "CPU[%d] is executing:", cpu);
-		if (entry->scheduled != NULL) {
-		TRACE_TASK(task, "task[PID %d TGID %d]\n", entry->scheduled->pid, entry->scheduled->tgid);
-			if (tgid == entry->scheduled->tgid)
-				parallel_degree++;
-		} else {
-		TRACE_TASK(task, "none.\n");
-		}
-	}
-
+	// for_each_online_cpu(cpu) {
+	// 	entry = &per_cpu(cgedf_cpu_entries, cpu);
+	// 	TRACE_TASK(task, "CPU[%d] is executing:", cpu);
+	// 	if (entry->scheduled != NULL) {
+	// 	TRACE_TASK(task, "task[PID %d TGID %d]\n", entry->scheduled->pid, entry->scheduled->tgid);
+	// 		if (tgid == entry->scheduled->tgid)
+	// 			parallel_degree++;
+	// 	} else {
+	// 	TRACE_TASK(task, "none.\n");
+	// 	}
+	// }
 
 	TRACE_TASK(task, "task PID:%d\n",task->pid);
 	TRACE_TASK(task, "task TGID:%d\n", task->tgid);
@@ -530,47 +533,52 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 		temp = entry->linked;
 	}
 
-	if (exists) {
-		// TRACE_TASK(temp, "branch 1.");
-		if (is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
-		// TRACE_TASK(temp, "branch 12.");
-			// requeue(temp);
-			constrained_set[num_cons++] = temp;
-			if (entry->linked)
-				unlink(temp);
-			temp =__take_ready(&cgedf);
-			while(is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
-				constrained_set[num_cons++] = temp;
+	if (NULL != temp) {
+		if (exists) {
+			// TRACE_TASK(temp, "branch 1.");
+			if (is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
+			// TRACE_TASK(temp, "branch 12.");
 				// requeue(temp);
-				temp =__take_ready(&cgedf);
-			}
-			if (temp)
-				link_task_to_cpu(temp, entry);
-		} else {
-			if (!entry->linked)
-				link_task_to_cpu(temp, entry);
-		}
-	} else {
-		// TRACE_TASK(temp, "branch 2.");
-		if (is_constrained(temp)) {
-		// TRACE_TASK(temp, "branch 22.");
-			// requeue(temp);
-			constrained_set[num_cons++] = temp;
-			if (entry->linked)
-				unlink(temp);
-			temp =__take_ready(&cgedf);
-			while(is_constrained(temp)) {
 				constrained_set[num_cons++] = temp;
-				// requeue(temp);
+				if (entry->linked)
+					unlink(temp);
 				temp =__take_ready(&cgedf);
+				while(is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
+					constrained_set[num_cons++] = temp;
+					// requeue(temp);
+					temp =__take_ready(&cgedf);
+				}
+				if (temp)
+					link_task_to_cpu(temp, entry);
+			} else {
+				if (!entry->linked)
+					link_task_to_cpu(temp, entry);
 			}
-			if (temp)
-				link_task_to_cpu(temp, entry);
 		} else {
-			if (!entry->linked)
-				link_task_to_cpu(temp, entry);
+			// TRACE_TASK(temp, "branch 2.");
+			if (is_constrained(temp)) {
+			// TRACE_TASK(temp, "branch 22.");
+				// requeue(temp);
+				constrained_set[num_cons++] = temp;
+				if (entry->linked)
+					unlink(temp);
+				temp =__take_ready(&cgedf);
+				while(is_constrained(temp)) {
+					constrained_set[num_cons++] = temp;
+					// requeue(temp);
+					temp =__take_ready(&cgedf);
+				}
+				if (temp)
+					link_task_to_cpu(temp, entry);
+			} else {
+				if (!entry->linked)
+					link_task_to_cpu(temp, entry);
+			}
 		}
 	}
+
+
+	
 	
 	// if (is_constrained(temp)) {
 	// 	// requeue(temp);
@@ -605,11 +613,13 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
 			next = entry->linked;
+			pd_add(&cgedf_pd_list, entry->linked->tgid);
 			TRACE_TASK(next, "scheduled_on = P%d\n", smp_processor_id());
 		}
 		if (entry->scheduled) {
 			/* not gonna be scheduled soon */
 			entry->scheduled->rt_param.scheduled_on = NO_CPU;
+			pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
 			TRACE_TASK(entry->scheduled, "scheduled_on = NO_CPU\n");
 		}
 	} else
@@ -663,6 +673,7 @@ static void cgedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 {
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
+	int tgid = t->tgid;
 
 	TRACE("cg edf: task new %d\n", t->pid);
 
@@ -670,6 +681,8 @@ static void cgedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 
 	/* setup job params */
 	release_at(t, litmus_clock());
+
+	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid;
 
 	if (is_scheduled) {
 		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
@@ -680,6 +693,7 @@ static void cgedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 #endif
 			entry->scheduled = t;
 			tsk_rt(t)->scheduled_on = task_cpu(t);
+			pd_add(&cgedf_pd_list, tgid);
 #ifdef CONFIG_RELEASE_MASTER
 		} else {
 			/* do not schedule on release master */
@@ -739,6 +753,9 @@ static void cgedf_task_exit(struct task_struct * t)
 		cgedf_cpus[tsk_rt(t)->scheduled_on]->scheduled = NULL;
 		tsk_rt(t)->scheduled_on = NO_CPU;
 	}
+
+	pd_task_exit(&cgedf_pd_list, t->tgid);
+
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 
 	BUG_ON(!is_realtime(t));
@@ -1123,6 +1140,8 @@ static long cgedf_activate_plugin(void)
 	cpu_entry_t *entry;
 
 	bheap_init(&cgedf_cpu_heap);
+	pd_stack_init(cgedf_pd_stack);
+	pd_list_init(&cgedf_pd_list);
 #ifdef CONFIG_RELEASE_MASTER
 	cgedf.release_master = atomic_read(&release_master_cpu);
 #endif
