@@ -1,7 +1,7 @@
 #ifndef PARALLEL_DEGREE_H
 #define PARALLEL_DEGREE_H
 
-#include <cons_set.h>
+#include <litmus/cons_set.h>
 
 #define MAX_INT 0xffffffff
 #define MAX_STACK_NUM 128
@@ -27,6 +27,7 @@ static void pd_node_init(pd_node* node) {
   node->active_num = 0;
   node->prev = NULL;
   node->next = NULL;
+  cq_init(&(node->queue));
 }
 
 static void pd_stack_init(pd_node* pd_stack) {
