@@ -253,6 +253,7 @@ static noinline int is_constrained(struct task_struct *task) {
 	// int tgid, cpu;
 	int tgid;
 	int parallel_degree = 0;
+	pd_node* node;
 	if(!task)
 		return 0;
 	BUG_ON(!task);
@@ -669,11 +670,12 @@ static void cgedf_finish_switch(struct task_struct *prev)
 
 /*	Prepare a task for running in RT mode
  */
-static void cgedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
+static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
+	pd_node* node;
 
 	TRACE("cg edf: task new %d\n", t->pid);
 
@@ -682,7 +684,7 @@ static void cgedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 	/* setup job params */
 	release_at(t, litmus_clock());
 
-	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid;
+	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid);
 
 	if (is_scheduled) {
 		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
@@ -752,9 +754,11 @@ static void cgedf_task_exit(struct task_struct * t)
 	if (tsk_rt(t)->scheduled_on != NO_CPU) {
 		cgedf_cpus[tsk_rt(t)->scheduled_on]->scheduled = NULL;
 		tsk_rt(t)->scheduled_on = NO_CPU;
+		pd_sub(&cgedf_pd_list, t->tgid);
 	}
 
 	pd_task_exit(&cgedf_pd_list, t->tgid);
+	TRACE_TASK(t, "list length: %d\n", cgedf_pd_list.length);
 
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 
@@ -1200,6 +1204,8 @@ static int __init init_cg_edf(void)
 	cpu_entry_t *entry;
 
 	bheap_init(&cgedf_cpu_heap);
+	// pd_stack_init(cgedf_pd_stack);
+	// pd_list_init(&cgedf_pd_list);
 	/* initialize CPU state */
 	for (cpu = 0; cpu < NR_CPUS; cpu++)  {
 		entry = &per_cpu(cgedf_cpu_entries, cpu);
