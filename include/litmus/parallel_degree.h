@@ -1,13 +1,16 @@
 #ifndef PARALLEL_DEGREE_H
 #define PARALLEL_DEGREE_H
 
+#include <cons_set.h>
+
 #define MAX_INT 0xffffffff
-#define MAX_STACK_NUM 256
+#define MAX_STACK_NUM 128
 
 typedef struct pd_node {
   int tgid;
   int t_num;
   int active_num;
+  cons_queue queue; 
   struct pd_node* prev;
   struct pd_node* next;
 } pd_node;

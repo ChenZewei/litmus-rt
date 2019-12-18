@@ -523,10 +523,11 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 
 	/* Link pending task if we became unlinked.
 	 */
-	// if (!entry->linked){
-	// 	link_task_to_cpu(__take_ready(&cgedf), entry);
-	// }
+	if (!entry->linked){
+		link_task_to_cpu(__take_ready(&cgedf), entry);
+	}
 
+/*
 	if (!entry->linked) {
 		temp = __take_ready(&cgedf);
 		// link_task_to_cpu(temp, entry);
@@ -577,30 +578,7 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 			}
 		}
 	}
-
-
-	
-	
-	// if (is_constrained(temp)) {
-	// 	// requeue(temp);
-	// 	constrained_set[num_cons++] = temp;
-	// 	if (entry->linked)
-	// 		unlink(temp);
-	// 	temp =__take_ready(&cgedf);
-	// 	while(is_constrained(temp)) {
-	// 		constrained_set[num_cons++] = temp;
-	// 		// requeue(temp);
-	// 		temp =__take_ready(&cgedf);
-	// 	}
-	// 	if (temp)
-	// 		link_task_to_cpu(temp, entry);
-	// }
-
-	// if (is_constrained(entry->linked)) {
-	// 	struct task_struct* temp = entry->linked;
-	// 	unlink(temp);
-	// 	cgedf_job_arrival(temp);
-	// }
+*/
 
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
@@ -608,19 +586,17 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
   // NULL != entry->linked &&
 	if ((!np || blocks) && 
 	    entry->linked != entry->scheduled ) {
-		
-		// constrained = exists && is_constrained(entry->scheduled);
 		/* Schedule a linked job? */
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
 			next = entry->linked;
-			pd_add(&cgedf_pd_list, entry->linked->tgid);
+			// pd_add(&cgedf_pd_list, entry->linked->tgid);
 			TRACE_TASK(next, "scheduled_on = P%d\n", smp_processor_id());
 		}
 		if (entry->scheduled) {
 			/* not gonna be scheduled soon */
 			entry->scheduled->rt_param.scheduled_on = NO_CPU;
-			pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
+			// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
 			TRACE_TASK(entry->scheduled, "scheduled_on = NO_CPU\n");
 		}
 	} else
@@ -676,6 +652,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
 	pd_node* node;
+	int constrained;
 
 	TRACE("cg edf: task new %d\n", t->pid);
 
@@ -685,31 +662,40 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	release_at(t, litmus_clock());
 
 	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid);
+	constrained = is_constrained(t);
 
-	if (is_scheduled) {
-		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
-		BUG_ON(entry->scheduled);
-
-#ifdef CONFIG_RELEASE_MASTER
-		if (entry->cpu != cgedf.release_master) {
-#endif
-			entry->scheduled = t;
-			tsk_rt(t)->scheduled_on = task_cpu(t);
-			pd_add(&cgedf_pd_list, tgid);
-#ifdef CONFIG_RELEASE_MASTER
-		} else {
-			/* do not schedule on release master */
-			preempt(entry); /* force resched */
-			tsk_rt(t)->scheduled_on = NO_CPU;
-		}
-#endif
+	if (constrained) {
+		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		cq_enqueue(&(node->queue), t);
 	} else {
-		t->rt_param.scheduled_on = NO_CPU;
-	}
-	t->rt_param.linked_on          = NO_CPU;
+		pd_add(&cgedf_pd_list, tgid);
 
-	if (on_rq || is_scheduled)
-		cgedf_job_arrival(t);
+		if (is_scheduled) {
+			entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
+			BUG_ON(entry->scheduled);
+
+#ifdef CONFIG_RELEASE_MASTER
+			if (entry->cpu != cgedf.release_master) {
+#endif
+				entry->scheduled = t;
+				tsk_rt(t)->scheduled_on = task_cpu(t);
+				// pd_add(&cgedf_pd_list, tgid);
+#ifdef CONFIG_RELEASE_MASTER
+			} else {
+				/* do not schedule on release master */
+				preempt(entry); /* force resched */
+				tsk_rt(t)->scheduled_on = NO_CPU;
+			}
+#endif
+		} else {
+			t->rt_param.scheduled_on = NO_CPU;
+		}
+		t->rt_param.linked_on          = NO_CPU;
+
+		if (on_rq || is_scheduled)
+			cgedf_job_arrival(t);
+	}
+	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
 
@@ -747,6 +733,9 @@ static void cgedf_task_block(struct task_struct *t)
 static void cgedf_task_exit(struct task_struct * t)
 {
 	unsigned long flags;
+	int tgid = t->tgid;
+	pd_node* node;
+	struct task_struct* resumed_task;
 
 	/* unlink if necessary */
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
@@ -754,10 +743,19 @@ static void cgedf_task_exit(struct task_struct * t)
 	if (tsk_rt(t)->scheduled_on != NO_CPU) {
 		cgedf_cpus[tsk_rt(t)->scheduled_on]->scheduled = NULL;
 		tsk_rt(t)->scheduled_on = NO_CPU;
-		pd_sub(&cgedf_pd_list, t->tgid);
+		// 
+	}
+	pd_sub(&cgedf_pd_list, tgid);
+	if (!is_constrained(t)) {
+		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		resumed_task = cq_dequeue(&(node->queue));
+		if (resumed_task) {
+			cgedf_job_arrival(resumed_task);
+			pd_add(&cgedf_pd_list, tgid);
+		}
 	}
 
-	pd_task_exit(&cgedf_pd_list, t->tgid);
+	pd_task_exit(&cgedf_pd_list, tgid);
 	TRACE_TASK(t, "list length: %d\n", cgedf_pd_list.length);
 
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
