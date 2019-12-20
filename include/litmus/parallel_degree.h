@@ -136,6 +136,7 @@ static void pd_add(pd_list* list, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num++;
+    TRACE("Task [%d]: adding active num. Current AN: %d\n", tgid, node->active_num);
   }
 }
 
@@ -143,6 +144,7 @@ static void pd_sub(pd_list* list, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num--;
+    TRACE("Task [%d]: subtracting active num. Current AN: %d\n", tgid, node->active_num);
   }
 }
 
