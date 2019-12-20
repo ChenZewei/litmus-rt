@@ -253,7 +253,7 @@ static noinline int is_constrained(struct task_struct *task) {
 	BUG_ON(!task);
 	tgid = task->tgid;
 
-	TRACE_TASK(task, "Checking constraint...\n");
+	// TRACE_TASK(task, "Checking constraint...\n");
 
 	parallel_degree = get_active_num(&cgedf_pd_list, tgid);
 
@@ -269,11 +269,10 @@ static noinline int is_constrained(struct task_struct *task) {
 	// 	TRACE_TASK(task, "none.\n");
 	// 	}
 	// }
-
-	TRACE_TASK(task, "task PID:%d\n",task->pid);
-	TRACE_TASK(task, "task TGID:%d\n", task->tgid);
-	TRACE_TASK(task, "task PD:%d\n", parallel_degree);
-	TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);		
+	// TRACE_TASK(task, "task PID:%d\n",task->pid);
+	// TRACE_TASK(task, "task TGID:%d\n", task->tgid);
+	// TRACE_TASK(task, "task PD:%d\n", parallel_degree);
+	// TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);		
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
 	// return 0;
 }
@@ -292,21 +291,19 @@ static noinline void requeue(struct task_struct* task)
 {
 	int tgid = task->tgid;
 	pd_node* node;
-	cons_queue* c_queue;
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
-	TRACE("CRequeuing.\n");
+	// TRACE("Requeuing.\n");
 	// if ((is_early_releasing(task) || is_released(task, litmus_clock())) && (!is_constrained(task)))
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
 		if (is_constrained(task)) {
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			BUG_ON(!node);
-			c_queue = &(node->queue);
-	TRACE("Constrained. Task enqueues to the constrained queue.\n");
-			if (!is_cq_exist(c_queue, task)) {
-				cq_enqueue(c_queue, task);
+			// BUG_ON(!node);
+	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
+			if (!is_cq_exist(&(node->queue), task)) {
+				cq_enqueue(&(node->queue), task);
 			}
 		} else {
 			pd_add(&cgedf_pd_list, tgid);
@@ -395,7 +392,6 @@ static void check_for_preemptions(void)
 static noinline void cgedf_job_arrival(struct task_struct* task)
 {
 	BUG_ON(!task);
-
 	requeue(task);
 	check_for_preemptions();
 }
@@ -406,22 +402,20 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
 	struct task_struct* task;
 	pd_node* node;
-	cons_queue* c_queue;
+	// cons_queue* c_queue;
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 	
 	while (bh_node) {
-		BUG_ON(!bh_node);
 		task = bheap2task(bh_node);
-		BUG_ON(!task);
-	TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
+		// BUG_ON(!task);
+	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
 		if (is_constrained(task)) {
-	TRACE("Constrained. Task enqueues to the constrained queue.\n");
+	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
 			node = find_pd_node_in_list(&cgedf_pd_list, task->tgid);
-			BUG_ON(!node);
-			c_queue = &(node->queue);
-			if (!is_cq_exist(c_queue, task)) {
-				cq_enqueue(c_queue, task);
+			// BUG_ON(!node);
+			if (!is_cq_exist(&(node->queue), task)) {
+				cq_enqueue(&(node->queue), task);
 			}
 		} else {
 			pd_add(&cgedf_pd_list, task->tgid);
@@ -457,9 +451,10 @@ static noinline void curr_job_completion(int forced)
 		if (resumed_task) {
 			pd_add(&cgedf_pd_list, resumed_task->tgid);
 			__add_ready(&cgedf, resumed_task);
-		} else {
-TRACE("No constrained task.\n");
 		}
+// 		 else {
+// TRACE("No constrained task.\n");
+// 		}
 	}
 
 	/* set flags */
@@ -579,59 +574,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 		link_task_to_cpu(__take_ready(&cgedf), entry);
 	}
 
-/*
-	if (!entry->linked) {
-		temp = __take_ready(&cgedf);
-		// link_task_to_cpu(temp, entry);
-	} else {
-		temp = entry->linked;
-	}
-
-	if (NULL != temp) {
-		if (exists) {
-			// TRACE_TASK(temp, "branch 1.");
-			if (is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
-			// TRACE_TASK(temp, "branch 12.");
-				// requeue(temp);
-				constrained_set[num_cons++] = temp;
-				if (entry->linked)
-					unlink(temp);
-				temp =__take_ready(&cgedf);
-				while(is_constrained(temp) && (temp->tgid != entry->scheduled->tgid)) {
-					constrained_set[num_cons++] = temp;
-					// requeue(temp);
-					temp =__take_ready(&cgedf);
-				}
-				if (temp)
-					link_task_to_cpu(temp, entry);
-			} else {
-				if (!entry->linked)
-					link_task_to_cpu(temp, entry);
-			}
-		} else {
-			// TRACE_TASK(temp, "branch 2.");
-			if (is_constrained(temp)) {
-			// TRACE_TASK(temp, "branch 22.");
-				// requeue(temp);
-				constrained_set[num_cons++] = temp;
-				if (entry->linked)
-					unlink(temp);
-				temp =__take_ready(&cgedf);
-				while(is_constrained(temp)) {
-					constrained_set[num_cons++] = temp;
-					// requeue(temp);
-					temp =__take_ready(&cgedf);
-				}
-				if (temp)
-					link_task_to_cpu(temp, entry);
-			} else {
-				if (!entry->linked)
-					link_task_to_cpu(temp, entry);
-			}
-		}
-	}
-*/
-
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
@@ -642,7 +584,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
 			next = entry->linked;
-			// pd_add(&cgedf_pd_list, entry->linked->tgid);
 			TRACE_TASK(next, "scheduled_on = P%d\n", smp_processor_id());
 		}
 		if (entry->scheduled) {
@@ -696,8 +637,6 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
-
-	TRACE("cg edf: task new %d\n", t->pid);
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
@@ -781,14 +720,15 @@ static void cgedf_task_exit(struct task_struct * t)
 		pd_sub(&cgedf_pd_list, tgid);
 		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			BUG_ON(!node);
+			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
 				cgedf_job_arrival(resumed_task);
 				pd_add(&cgedf_pd_list, tgid);
-			} else {
-	TRACE("No constrained task.\n");
-			}
+			} 
+	// 		else {
+	// TRACE("No constrained task.\n");
+	// 		}
 		}
 	}
 	

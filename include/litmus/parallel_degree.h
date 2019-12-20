@@ -10,6 +10,7 @@ typedef struct pd_node {
   int tgid;
   int t_num;
   int active_num;
+  // int CPD;
   cons_queue queue; 
   struct pd_node* prev;
   struct pd_node* next;
@@ -25,6 +26,7 @@ static void pd_node_init(pd_node* node) {
   node->tgid = MAX_INT;
   node->t_num = 0;
   node->active_num = 0;
+  // node->CPD = 0;
   node->prev = NULL;
   node->next = NULL;
   cq_init(&(node->queue));
@@ -44,7 +46,7 @@ static void pd_list_init(pd_list* list) {
 }
 
 
-static pd_node* get_node_in_stack(pd_node* pd_stack) {
+static inline pd_node* get_node_in_stack(pd_node* pd_stack) {
   int i;
   for (i = 0; i < MAX_STACK_NUM; i++) {
     if (MAX_INT == pd_stack[i].tgid)
@@ -53,7 +55,7 @@ static pd_node* get_node_in_stack(pd_node* pd_stack) {
   return NULL;
 }
 
-static pd_node* find_pd_node_in_stack(pd_node* pd_stack, int tgid) {
+static inline pd_node* find_pd_node_in_stack(pd_node* pd_stack, int tgid) {
   int i;
   for (i = 0; i < MAX_STACK_NUM; i++) {
     if (tgid == pd_stack[i].tgid)
@@ -63,7 +65,7 @@ static pd_node* find_pd_node_in_stack(pd_node* pd_stack, int tgid) {
 }
 
 
-static pd_node* find_pd_node_in_list(pd_list* list, int tgid) {
+static inline pd_node* find_pd_node_in_list(pd_list* list, int tgid) {
   pd_node* curr = list->head;
   while (curr) {
     if (tgid == curr->tgid)
@@ -132,23 +134,23 @@ static void pd_task_exit(pd_list* list, int tgid) {
   }
 }
 
-static void pd_add(pd_list* list, int tgid) {
+static inline void pd_add(pd_list* list, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num++;
-    TRACE("Task [%d]: adding active num. Current AN: %d\n", tgid, node->active_num);
+    // TRACE("Task [%d]: adding active num. Current AN: %d\n", tgid, node->active_num);
   }
 }
 
-static void pd_sub(pd_list* list, int tgid) {
+static inline void pd_sub(pd_list* list, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num--;
-    TRACE("Task [%d]: subtracting active num. Current AN: %d\n", tgid, node->active_num);
+    // TRACE("Task [%d]: subtracting active num. Current AN: %d\n", tgid, node->active_num);
   }
 }
 
-static int get_active_num(pd_list* list, int tgid) {
+static inline int get_active_num(pd_list* list, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node)
     return node->active_num;
