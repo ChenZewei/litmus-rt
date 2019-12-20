@@ -723,9 +723,9 @@ static void cgedf_task_exit(struct task_struct * t)
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
-				cgedf_job_arrival(resumed_task);
-				pd_add(&cgedf_pd_list, tgid);
-			} 
+				pd_add(&cgedf_pd_list, resumed_task->tgid);
+				__add_ready(&cgedf, resumed_task);
+			}
 	// 		else {
 	// TRACE("No constrained task.\n");
 	// 		}
