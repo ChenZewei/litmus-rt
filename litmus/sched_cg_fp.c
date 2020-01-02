@@ -455,18 +455,14 @@ static noinline void curr_job_completion(int forced)
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	pd_sub(&cgfp_pd_list, t->tgid);
-	while (!is_constrained(t)) {
+	if (!is_constrained(t)) {
 		node = find_pd_node_in_list(&cgfp_pd_list, t->tgid);
 		BUG_ON(!node);
 		resumed_task = cq_dequeue(&(node->queue));
 		if (resumed_task) {
 			pd_add(&cgfp_pd_list, resumed_task->tgid);
 			fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-			// __add_ready(&cgfp, resumed_task);
 		}
-// 		 else {
-// TRACE("No constrained task.\n");
-// 		}
 	}
 
 	/* set flags */
@@ -512,6 +508,8 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
 	struct task_struct* temp = NULL;
+	pd_node* node;
+	struct task_struct* resumed_task;
 
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
@@ -558,6 +556,15 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	 */
 	if (blocks) {
 		pd_sub(&cgfp_pd_list, entry->scheduled->tgid);
+		if (!is_constrained(entry->scheduled)) {
+			node = find_pd_node_in_list(&cgfp_pd_list, entry->scheduled->tgid);
+			BUG_ON(!node);
+			resumed_task = cq_dequeue(&(node->queue));
+			if (resumed_task) {
+				pd_add(&cgfp_pd_list, resumed_task->tgid);
+				fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+			}
+		}
 		unlink(entry->scheduled);
 	}
 
@@ -568,6 +575,15 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	 */
 	if (np && (out_of_time || preempt || sleep)) {
 		pd_sub(&cgfp_pd_list, entry->scheduled->tgid);
+		if (!is_constrained(entry->scheduled)) {
+			node = find_pd_node_in_list(&cgfp_pd_list, entry->scheduled->tgid);
+			BUG_ON(!node);
+			resumed_task = cq_dequeue(&(node->queue));
+			if (resumed_task) {
+				pd_add(&cgfp_pd_list, resumed_task->tgid);
+				fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+			}
+		}
 		unlink(entry->scheduled);
 		request_exit_np(entry->scheduled);
 	}
@@ -730,7 +746,7 @@ static void cgfp_task_exit(struct task_struct * t)
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
 		pd_sub(&cgfp_pd_list, tgid);
-		while (!is_constrained(t)) {
+		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
