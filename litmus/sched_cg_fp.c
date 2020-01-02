@@ -455,7 +455,7 @@ static noinline void curr_job_completion(int forced)
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	pd_sub(&cgfp_pd_list, t->tgid);
-	if (!is_constrained(t)) {
+	while (!is_constrained(t)) {
 		node = find_pd_node_in_list(&cgfp_pd_list, t->tgid);
 		BUG_ON(!node);
 		resumed_task = cq_dequeue(&(node->queue));
@@ -730,7 +730,7 @@ static void cgfp_task_exit(struct task_struct * t)
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
 		pd_sub(&cgfp_pd_list, tgid);
-		if (!is_constrained(t)) {
+		while (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
