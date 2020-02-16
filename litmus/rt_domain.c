@@ -62,6 +62,8 @@ static enum hrtimer_restart on_release_timer(struct hrtimer *timer)
 
 	VTRACE("on_release_timer(0x%p) starts.\n", timer);
 
+	TRACE("Checking release time.\n");
+
 	TS_RELEASE_START;
 
 
