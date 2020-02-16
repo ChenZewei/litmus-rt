@@ -388,6 +388,58 @@ static void check_for_preemptions(void)
 	}
 }
 
+static void check_for_preemptions(struct task_struct* task)
+{
+	cpu_entry_t *last;
+
+
+#ifdef CONFIG_PREFER_LOCAL_LINKING
+	cpu_entry_t *local;
+
+	/* Before linking to other CPUs, check first whether the local CPU is
+	 * idle. */
+	local = this_cpu_ptr(&cgedf_cpu_entries);
+	// if (!task)
+	// task  = __peek_ready(&cgedf);
+
+	if (task && !local->linked
+#ifdef CONFIG_RELEASE_MASTER
+	    && likely(local->cpu != cgedf.release_master)
+#endif
+		) {
+		task = __take_ready(&cgedf);
+		TRACE_TASK(task, "linking to local CPU %d to avoid IPI\n", local->cpu);
+		link_task_to_cpu(task, local);
+		preempt(local);
+	}
+#endif
+
+	last = lowest_prio_cpu();
+	/* preemption necessary */
+	if (task && is_realtime(task) && edf_higher_prio(task, last->linked)) {
+		TRACE("check_for_preemptions: attempting to link task %d to %d\n",
+					task->pid, last->cpu);
+
+#ifdef CONFIG_SCHED_CPU_AFFINITY
+		{
+			cpu_entry_t *affinity =
+					cgedf_get_nearest_available_cpu(
+						&per_cpu(cgedf_cpu_entries, task_cpu(task)));
+			if (affinity)
+				last = affinity;
+			else if (requeue_preempted_job(last->linked))
+				requeue(last->linked);
+		}
+#else
+		if (requeue_preempted_job(last->linked))
+			requeue(last->linked);
+#endif
+
+		link_task_to_cpu(task, last);
+		preempt(last);
+	}
+}
+
 /* cgedf_job_arrival: task is either resumed or released */
 static noinline void cgedf_job_arrival(struct task_struct* task)
 {
@@ -421,12 +473,13 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		} else {
 			pd_add(&cgedf_pd_list, task->tgid);
 			__add_ready(&cgedf, task);
+			check_for_preemptions(task);
 		}
 		bh_node = bheap_take(rt->order, tasks);
 	}
 	// bheap_init(tasks);
 	// __merge_ready(rt, tasks);
-	check_for_preemptions();
+	// check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
