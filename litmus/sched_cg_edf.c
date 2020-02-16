@@ -388,7 +388,7 @@ static void check_for_preemptions(void)
 	}
 }
 
-static void check_for_preemptions(struct task_struct* task)
+static void check_for_preemption(struct task_struct* task)
 {
 	cpu_entry_t *last;
 
@@ -473,7 +473,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		} else {
 			pd_add(&cgedf_pd_list, task->tgid);
 			__add_ready(&cgedf, task);
-			check_for_preemptions(task);
+			check_for_preemption(task);
 		}
 		bh_node = bheap_take(rt->order, tasks);
 	}
