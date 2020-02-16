@@ -302,7 +302,7 @@ static void psnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	raw_spin_lock_irqsave(&pedf->slock, flags);
 
 	__merge_ready(rt, tasks);
-	psnedf_preempt_check(pedf)
+	psnedf_preempt_check(pedf);
 
 	raw_spin_unlock_irqrestore(&pedf->slock, flags);
 }
