@@ -407,7 +407,6 @@ static void check_for_preemption(struct task_struct* task)
 	    && likely(local->cpu != cgedf.release_master)
 #endif
 		) {
-		task = __take_ready(&cgedf);
 		TRACE_TASK(task, "linking to local CPU %d to avoid IPI\n", local->cpu);
 		link_task_to_cpu(task, local);
 		preempt(local);
