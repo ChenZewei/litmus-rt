@@ -411,32 +411,33 @@ static void check_for_preemption(struct task_struct* task)
 		TRACE_TASK(task, "linking to local CPU %d to avoid IPI\n", local->cpu);
 		link_task_to_cpu(task, local);
 		preempt(local);
-	}
+	} else
 #endif
+  {
+		last = lowest_prio_cpu();
+		/* preemption necessary */
+		if (task && is_realtime(task) && edf_higher_prio(task, last->linked)) {
+			TRACE("check_for_preemptions: attempting to link task %d to %d\n",
+						task->pid, last->cpu);
 
-	last = lowest_prio_cpu();
-	/* preemption necessary */
-	if (task && is_realtime(task) && edf_higher_prio(task, last->linked)) {
-		TRACE("check_for_preemptions: attempting to link task %d to %d\n",
-					task->pid, last->cpu);
-
-#ifdef CONFIG_SCHED_CPU_AFFINITY
-		{
-			cpu_entry_t *affinity =
-					cgedf_get_nearest_available_cpu(
-						&per_cpu(cgedf_cpu_entries, task_cpu(task)));
-			if (affinity)
-				last = affinity;
-			else if (requeue_preempted_job(last->linked))
+	#ifdef CONFIG_SCHED_CPU_AFFINITY
+			{
+				cpu_entry_t *affinity =
+						cgedf_get_nearest_available_cpu(
+							&per_cpu(cgedf_cpu_entries, task_cpu(task)));
+				if (affinity)
+					last = affinity;
+				else if (requeue_preempted_job(last->linked))
+					requeue(last->linked);
+			}
+	#else
+			if (requeue_preempted_job(last->linked))
 				requeue(last->linked);
-		}
-#else
-		if (requeue_preempted_job(last->linked))
-			requeue(last->linked);
-#endif
+	#endif
 
-		link_task_to_cpu(task, last);
-		preempt(last);
+			link_task_to_cpu(task, last);
+			preempt(last);
+		}
 	}
 }
 
