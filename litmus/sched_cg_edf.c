@@ -403,6 +403,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	struct task_struct* task;
 	pd_node* node;
 	// cons_queue* c_queue;
+	TRACE("Tasks release.\n");
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 	

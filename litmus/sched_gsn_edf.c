@@ -347,7 +347,7 @@ static noinline void gsnedf_job_arrival(struct task_struct* task)
 static void gsnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
-
+	TRACE("Tasks release.\n");
 	raw_spin_lock_irqsave(&gsnedf_lock, flags);
 
 	__merge_ready(rt, tasks);

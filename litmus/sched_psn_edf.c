@@ -293,6 +293,19 @@ static void psnedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 	raw_spin_unlock_irqrestore(&pedf->slock, flags);
 }
 
+// Should we check for preemptions upon releasing tasks?
+static void psnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
+{
+	unsigned long flags;
+	TRACE("Tasks release.\n");
+	raw_spin_lock_irqsave(&pedf->slock, flags);
+
+	__merge_ready(rt, tasks);
+	psnedf_preempt_check(pedf)
+
+	raw_spin_unlock_irqrestore(&pedf->slock, flags);
+}
+
 static void psnedf_task_wake_up(struct task_struct *task)
 {
 	unsigned long		flags;
@@ -678,9 +691,12 @@ static int __init init_psn_edf(void)
 	 * we cannot use num_online_cpu()
 	 */
 	for (i = 0; i < num_online_cpus(); i++) {
+		// psnedf_domain_init(remote_pedf(i),
+		// 		   psnedf_check_resched,
+		// 		   NULL, i);
 		psnedf_domain_init(remote_pedf(i),
 				   psnedf_check_resched,
-				   NULL, i);
+				   psnedf_release_jobs, i);
 	}
 	return register_sched_plugin(&psn_edf_plugin);
 }
