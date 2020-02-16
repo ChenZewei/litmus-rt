@@ -297,6 +297,7 @@ static void psnedf_task_new(struct task_struct * t, int on_rq, int is_scheduled)
 static void psnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
+	psnedf_domain_t* 	pedf = local_pedf;
 	TRACE("Tasks release.\n");
 	raw_spin_lock_irqsave(&pedf->slock, flags);
 
