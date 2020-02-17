@@ -286,6 +286,7 @@ static void check_for_preemptions(void)
 	struct task_struct *task;
 	cpu_entry_t *last;
 
+	TRACE("Timer 11: %llu.\n", litmus_clock());
 
 #ifdef CONFIG_PREFER_LOCAL_LINKING
 	cpu_entry_t *local;
@@ -307,10 +308,13 @@ static void check_for_preemptions(void)
 	}
 #endif
 
+  TRACE("Timer 22: %llu.\n", litmus_clock());
 	for (last = lowest_prio_cpu();
 	     edf_preemption_needed(&gsnedf, last->linked);
 	     last = lowest_prio_cpu()) {
 		/* preemption necessary */
+
+	TRACE("Timer 33: %llu.\n", litmus_clock());
 		task = __take_ready(&gsnedf);
 		TRACE("check_for_preemptions: attempting to link task %d to %d\n",
 		      task->pid, last->cpu);
@@ -333,6 +337,8 @@ static void check_for_preemptions(void)
 		link_task_to_cpu(task, last);
 		preempt(last);
 	}
+
+	TRACE("Timer 44: %llu.\n", litmus_clock());
 }
 
 /* gsnedf_job_arrival: task is either resumed or released */

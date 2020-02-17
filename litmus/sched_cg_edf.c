@@ -481,13 +481,13 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		} else {
 			pd_add(&cgedf_pd_list, task->tgid);
 			__add_ready(&cgedf, task);
-			check_for_preemption(task);
+			// check_for_preemption(task);
 		}
 		bh_node = bheap_take(rt->order, tasks);
 	}
 	// bheap_init(tasks);
 	// __merge_ready(rt, tasks);
-	// check_for_preemptions();
+	check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
