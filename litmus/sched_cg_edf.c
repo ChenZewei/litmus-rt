@@ -253,7 +253,7 @@ static noinline int is_constrained(struct task_struct *task) {
 	BUG_ON(!task);
 	tgid = task->tgid;
 
-	// TRACE_TASK(task, "Checking constraint...\n");
+	TRACE_TASK(task, "Checking constraint...\n");
 
 	parallel_degree = get_active_num(&cgedf_pd_list, tgid);
 
@@ -462,6 +462,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
 	struct task_struct* task;
 	pd_node* node;
+	int tgid = MAX_INT;
 	// cons_queue* c_queue;
 	TRACE("Tasks release.\n");
 
@@ -472,7 +473,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		task = bheap2task(bh_node);
 		// BUG_ON(!task);
 	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
-		if (is_constrained(task)) {
+		if (tgid == task->tgid || is_constrained(task)) {
 	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
   TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
 			node = find_pd_node_in_list(&cgedf_pd_list, task->tgid);
@@ -480,6 +481,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 			if (!is_cq_exist(&(node->queue), task)) {
 				cq_enqueue(&(node->queue), task);
 			}
+			tgid = task->tgid;
 		} else {
   TRACE("Add task to ready queue: %llu.\n", litmus_clock());
 			pd_add(&cgedf_pd_list, task->tgid);
