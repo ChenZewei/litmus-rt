@@ -467,27 +467,35 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 	
+  TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {
 		task = bheap2task(bh_node);
 		// BUG_ON(!task);
 	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
 		if (is_constrained(task)) {
 	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
+  TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
 			node = find_pd_node_in_list(&cgedf_pd_list, task->tgid);
 			// BUG_ON(!node);
 			if (!is_cq_exist(&(node->queue), task)) {
 				cq_enqueue(&(node->queue), task);
 			}
 		} else {
+  TRACE("Add task to ready queue: %llu.\n", litmus_clock());
 			pd_add(&cgedf_pd_list, task->tgid);
 			__add_ready(&cgedf, task);
 			// check_for_preemption(task);
 		}
+  TRACE("Finish adding at: %llu.\n", litmus_clock());
 		bh_node = bheap_take(rt->order, tasks);
 	}
+
+  TRACE("Finish releasing: %llu.\n", litmus_clock());
 	// bheap_init(tasks);
 	// __merge_ready(rt, tasks);
+  TRACE("Check for preemptions: %llu.\n", litmus_clock());
 	check_for_preemptions();
+  TRACE("Finish preemption checking: %llu.\n", litmus_clock());
 	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }

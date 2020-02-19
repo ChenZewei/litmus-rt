@@ -360,6 +360,7 @@ static void gsnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	check_for_preemptions();
 
 	raw_spin_unlock_irqrestore(&gsnedf_lock, flags);
+	TRACE("Finish tasks releasing.\n");
 }
 
 /* caller holds gsnedf_lock */
