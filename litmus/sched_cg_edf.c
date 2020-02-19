@@ -473,6 +473,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		task = bheap2task(bh_node);
 		// BUG_ON(!task);
 	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
+  TRACE("Get a released task: %llu.\n", litmus_clock());
 		if (tgid == task->tgid || is_constrained(task)) {
 	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
   TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
