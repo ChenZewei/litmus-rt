@@ -462,7 +462,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
 	struct task_struct* task;
 	pd_node* node;
-	int tgid = MAX_INT;
+	int last_constrained_tgid = MAX_INT, curr_tgid;
 	// cons_queue* c_queue;
 	TRACE("Tasks release.\n");
 
@@ -471,21 +471,22 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
   TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {
 		task = bheap2task(bh_node);
+		curr_tgid = task->tgid;
 		// BUG_ON(!task);
 	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
   TRACE("Get a released task: %llu.\n", litmus_clock());
-		if (tgid == task->tgid || is_constrained(task)) {
+		if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
 	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
   TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
-			node = find_pd_node_in_list(&cgedf_pd_list, task->tgid);
+			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
 			// BUG_ON(!node);
 			if (!is_cq_exist(&(node->queue), task)) {
 				cq_enqueue(&(node->queue), task);
 			}
-			tgid = task->tgid;
+			last_constrained_tgid = curr_tgid;
 		} else {
   TRACE("Add task to ready queue: %llu.\n", litmus_clock());
-			pd_add(&cgedf_pd_list, task->tgid);
+			pd_add(&cgedf_pd_list, curr_tgid);
 			__add_ready(&cgedf, task);
 			// check_for_preemption(task);
 		}
