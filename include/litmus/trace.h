@@ -110,7 +110,8 @@ feather_callback void save_cpu_task_latency(unsigned long event, unsigned long w
 #define TS_UNLOCK_START			CPU_TIMESTAMP_CUR(40)
 #define TS_UNLOCK_END			CPU_TIMESTAMP_CUR(41)
 
-#define TS_SCHED_START			CPU_DTIMESTAMP(100, TSK_UNKNOWN) /* we only
+#define TS_SCHED_START			CPU_DTIMESTAMP(100, TSK_UNKNOWN) 
+                     /* we only
 								      * care
 								      * about
 								      * next */

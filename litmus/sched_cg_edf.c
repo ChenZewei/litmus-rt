@@ -824,6 +824,9 @@ static void cgedf_task_exit(struct task_struct * t)
 	// TRACE("No constrained task.\n");
 	// 		}
 		}
+		TRACE_TASK(t, "Active num::%d\n", get_active_num(&cgedf_pd_list, tgid));
+		TRACE_TASK(t, "thread num:%d\n", find_pd_node_in_list(&cgedf_pd_list, tgid)->t_num);
+		TRACE_TASK(t, "Constrained queue size:%d\n", find_pd_node_in_list(&cgedf_pd_list, tgid)->queue.length);
 	}
 	
 	unlink(t);
