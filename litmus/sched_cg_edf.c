@@ -836,19 +836,19 @@ static void cgedf_task_exit(struct task_struct * t)
 		cgedf_cpus[tsk_rt(t)->scheduled_on]->scheduled = NULL;
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
-		// pd_sub(&cgedf_pd_list, tgid);
-		// if (!is_constrained(t)) {
-		// 	node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-		// 	// BUG_ON(!node);
-		// 	resumed_task = cq_dequeue(&(node->queue));
-		// 	if (resumed_task) {
-		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
-		// 		__add_ready(&cgedf, resumed_task);
-		// 	}
+	// 	pd_sub(&cgedf_pd_list, tgid);
+	// 	if (!is_constrained(t)) {
+	// 		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+	// 		// BUG_ON(!node);
+	// 		resumed_task = cq_dequeue(&(node->queue));
+	// 		if (resumed_task) {
+	// 			pd_add(&cgedf_pd_list, resumed_task->tgid);
+	// 			__add_ready(&cgedf, resumed_task);
+	// 		}
 	// 		else {
 	// TRACE("No constrained task.\n");
 	// 		}
-		}
+	// 	}
 		TRACE_TASK(t, "Active num::%d\n", get_active_num(&cgedf_pd_list, tgid));
 		TRACE_TASK(t, "thread num:%d\n", find_pd_node_in_list(&cgedf_pd_list, tgid)->t_num);
 		TRACE_TASK(t, "Constrained queue size:%d\n", find_pd_node_in_list(&cgedf_pd_list, tgid)->queue.length);
