@@ -621,16 +621,18 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	/* If a task blocks we have no choice but to reschedule.
 	 */
 	if (blocks) {
-		pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				__add_ready(&cgedf, resumed_task);
-			}
-		}
+
+		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
+		// if (!is_constrained(entry->scheduled)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
+		// 	BUG_ON(!node);
+		// 	resumed_task = cq_dequeue(&(node->queue));
+		// 	if (resumed_task) {
+		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
+		// 		__add_ready(&cgedf, resumed_task);
+		// 	}
+		// }
+
 		unlink(entry->scheduled);
 	}
 
@@ -640,16 +642,18 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	 * hurt.
 	 */
 	if (np && (out_of_time || preempt || sleep)) {
-		pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				__add_ready(&cgedf, resumed_task);
-			}
-		}
+
+		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
+		// if (!is_constrained(entry->scheduled)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
+		// 	BUG_ON(!node);
+		// 	resumed_task = cq_dequeue(&(node->queue));
+		// 	if (resumed_task) {
+		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
+		// 		__add_ready(&cgedf, resumed_task);
+		// 	}
+		// }
+
 		unlink(entry->scheduled);
 		request_exit_np(entry->scheduled);
 	}
