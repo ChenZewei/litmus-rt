@@ -119,7 +119,7 @@ struct rt_task {
 	lt_t		phase;
 	unsigned int	cpu;
 	unsigned int	priority;
-	int constrained_parallel_degree;
+	unsigned int constrained_parallel_degree;
 	task_class_t	cls;
 	budget_policy_t  budget_policy;  /* ignored by pfair */
 	release_policy_t release_policy;
