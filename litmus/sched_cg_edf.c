@@ -272,7 +272,9 @@ static noinline int is_constrained(struct task_struct *task) {
 	// TRACE_TASK(task, "task PID:%d\n",task->pid);
 	// TRACE_TASK(task, "task TGID:%d\n", task->tgid);
 	// TRACE_TASK(task, "task PD:%d\n", parallel_degree);
-	// TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);		
+	// TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);
+	if (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree)
+			TRACE_TASK(task, "Constrained!\n");	
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
 	// return 0;
 }
@@ -473,10 +475,10 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		task = bheap2task(bh_node);
 		curr_tgid = task->tgid;
 		// BUG_ON(!task);
-	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
+	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
   // TRACE("Get a released task: %llu.\n", litmus_clock());
 		if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
-	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
+	TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
   // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
 			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
 			// BUG_ON(!node);
