@@ -311,6 +311,7 @@ static noinline void requeue(struct task_struct* task)
 	// 		pd_add(&cgedf_pd_list, tgid);
 	// 		__add_ready(&cgedf, task);
 	// 	}
+		pd_add(&cgedf_pd_list, tgid);
 		__add_ready(&cgedf, task);
 	}
 	else {
