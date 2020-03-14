@@ -269,10 +269,10 @@ static noinline int is_constrained(struct task_struct *task) {
 	// 	TRACE_TASK(task, "none.\n");
 	// 	}
 	// }
-	// TRACE_TASK(task, "task PID:%d\n",task->pid);
-	// TRACE_TASK(task, "task TGID:%d\n", task->tgid);
-	// TRACE_TASK(task, "task PD:%d\n", parallel_degree);
-	// TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);
+	TRACE_TASK(task, "task PID:%d\n",task->pid);
+	TRACE_TASK(task, "task TGID:%d\n", task->tgid);
+	TRACE_TASK(task, "task PD:%d\n", parallel_degree);
+	TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);
 	if (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree)
 			TRACE_TASK(task, "Constrained!\n");	
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
