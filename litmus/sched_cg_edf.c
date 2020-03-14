@@ -250,7 +250,7 @@ static noinline int is_constrained(struct task_struct *task) {
 	// cpu_entry_t *entry;
 	// int tgid, cpu;
 	int tgid;
-	int parallel_degree = 0;
+	uint parallel_degree = 0;
 	if(!task)
 		return 0;
 	BUG_ON(!task);
