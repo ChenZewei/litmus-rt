@@ -300,17 +300,18 @@ static noinline void requeue(struct task_struct* task)
 	// TRACE("Requeuing.\n");
 	// if ((is_early_releasing(task) || is_released(task, litmus_clock())) && (!is_constrained(task)))
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
-		if (is_constrained(task)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			// BUG_ON(!node);
-	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
-			if (!is_cq_exist(&(node->queue), task)) {
-				cq_enqueue(&(node->queue), task);
-			}
-		} else {
-			pd_add(&cgedf_pd_list, tgid);
-			__add_ready(&cgedf, task);
-		}
+	// 	if (is_constrained(task)) {
+	// 		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+	// 		// BUG_ON(!node);
+	// // TRACE("Constrained. Task enqueues to the constrained queue.\n");
+	// 		if (!is_cq_exist(&(node->queue), task)) {
+	// 			cq_enqueue(&(node->queue), task);
+	// 		}
+	// 	} else {
+	// 		pd_add(&cgedf_pd_list, tgid);
+	// 		__add_ready(&cgedf, task);
+	// 	}
+		__add_ready(&cgedf, task);
 	}
 	else {
 		/* it has got to wait */
