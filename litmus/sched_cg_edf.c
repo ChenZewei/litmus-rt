@@ -170,6 +170,7 @@ static cpu_entry_t* lowest_prio_cpu(void)
 static noinline void link_task_to_cpu(struct task_struct* linked,
 				      cpu_entry_t *entry)
 {
+	TRACE("link_task_to_cpu()\n");
 	cpu_entry_t *sched;
 	struct task_struct* tmp;
 	int on_cpu;
@@ -224,6 +225,7 @@ static noinline void link_task_to_cpu(struct task_struct* linked,
  */
 static noinline void unlink(struct task_struct* t)
 {
+	TRACE("unlink()\n");
 	cpu_entry_t *entry;
 
 	if (t->rt_param.linked_on != NO_CPU) {
@@ -244,6 +246,7 @@ static noinline void unlink(struct task_struct* t)
 }
 
 static noinline int is_constrained(struct task_struct *task) {
+	TRACE("is_constrained()\n");
 	// cpu_entry_t *entry;
 	// int tgid, cpu;
 	int tgid;
@@ -283,6 +286,7 @@ static noinline int is_constrained(struct task_struct *task) {
  */
 static void preempt(cpu_entry_t *entry)
 {
+	TRACE("preempt()\n");
 	preempt_if_preemptable(entry->scheduled, entry->cpu);
 }
 
@@ -291,6 +295,7 @@ static void preempt(cpu_entry_t *entry)
  */
 static noinline void requeue(struct task_struct* task)
 {
+	TRACE("requeue()\n");
 	int tgid = task->tgid;
 	pd_node* node;
 	BUG_ON(!task);
@@ -316,6 +321,7 @@ static noinline void requeue(struct task_struct* task)
 	}
 	else {
 		/* it has got to wait */
+		pd_sub(&cgedf_pd_list, tgid);
 		add_release(&cgedf, task);
 	}
 }
@@ -340,6 +346,7 @@ static cpu_entry_t* cgedf_get_nearest_available_cpu(cpu_entry_t *start)
 /* check for any necessary preemptions */
 static void check_for_preemptions(void)
 {
+	TRACE("check_for_preemptions()\n");
 	struct task_struct *task;
 	cpu_entry_t *last;
 
@@ -394,6 +401,7 @@ static void check_for_preemptions(void)
 
 static void check_for_preemption(struct task_struct* task)
 {
+	TRACE("check_for_preemptions()\n");
 	cpu_entry_t *last;
 
 
@@ -455,6 +463,7 @@ static void check_for_preemption(struct task_struct* task)
 /* cgedf_job_arrival: task is either resumed or released */
 static noinline void cgedf_job_arrival(struct task_struct* task)
 {
+	TRACE("cgedf_job_arrival()\n");
 	BUG_ON(!task);
 	requeue(task);
 	check_for_preemptions();
@@ -462,6 +471,7 @@ static noinline void cgedf_job_arrival(struct task_struct* task)
 
 static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
+	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
 	struct task_struct* task;
@@ -511,6 +521,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 /* caller holds cgedf_lock */
 static noinline void curr_job_completion(int forced)
 {
+	TRACE("curr_job_completion()\n");
 	struct task_struct *t = current;
 	// int tgid;
 	pd_node* node;
@@ -573,6 +584,7 @@ static noinline void curr_job_completion(int forced)
  */
 static struct task_struct* cgedf_schedule(struct task_struct * prev)
 {
+	TRACE("cgedf_schedule()\n");
 	cpu_entry_t* entry = this_cpu_ptr(&cgedf_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
@@ -723,6 +735,7 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
  */
 static void cgedf_finish_switch(struct task_struct *prev)
 {
+	TRACE("cgedf_finish_switch()\n");
 	cpu_entry_t* 	entry = this_cpu_ptr(&cgedf_cpu_entries);
 
 	entry->scheduled = is_realtime(current) ? current : NULL;
@@ -736,6 +749,7 @@ static void cgedf_finish_switch(struct task_struct *prev)
  */
 static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
+	TRACE("cgedf_task_new()\n");
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
@@ -776,6 +790,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 static void cgedf_task_wake_up(struct task_struct *task)
 {
+	TRACE("cgedf_task_wake_up()\n");
 	unsigned long flags;
 	lt_t now;
 
@@ -792,6 +807,7 @@ static void cgedf_task_wake_up(struct task_struct *task)
 
 static void cgedf_task_block(struct task_struct *t)
 {
+	TRACE("cgedf_task_block()\n");
 	unsigned long flags;
 
 	TRACE_TASK(t, "block at %llu\n", litmus_clock());
@@ -807,6 +823,7 @@ static void cgedf_task_block(struct task_struct *t)
 
 static void cgedf_task_exit(struct task_struct * t)
 {
+	TRACE("cgedf_task_exit()\n");
 	unsigned long flags;
 	int tgid = t->tgid;
 	pd_node* node;
@@ -847,6 +864,7 @@ static void cgedf_task_exit(struct task_struct * t)
 
 static long cgedf_admit_task(struct task_struct* tsk)
 {
+	TRACE("cgedf_admit_task()\n");
 	TRACE_TASK(tsk, "Admitting task[%d].\n", tsk->pid);
 	return 0;
 }
