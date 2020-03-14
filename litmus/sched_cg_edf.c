@@ -170,7 +170,7 @@ static cpu_entry_t* lowest_prio_cpu(void)
 static noinline void link_task_to_cpu(struct task_struct* linked,
 				      cpu_entry_t *entry)
 {
-	TRACE("link_task_to_cpu()\n");
+	// TRACE("link_task_to_cpu()\n");
 	cpu_entry_t *sched;
 	struct task_struct* tmp;
 	int on_cpu;
@@ -735,7 +735,7 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
  */
 static void cgedf_finish_switch(struct task_struct *prev)
 {
-	TRACE("cgedf_finish_switch()\n");
+	// TRACE("cgedf_finish_switch()\n");
 	cpu_entry_t* 	entry = this_cpu_ptr(&cgedf_cpu_entries);
 
 	entry->scheduled = is_realtime(current) ? current : NULL;
