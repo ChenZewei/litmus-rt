@@ -147,7 +147,8 @@ static inline void pd_sub(pd_list* list, int tgid) {
   TRACE("pd_sub\n");
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
-    node->active_num--;
+    if (0 < node->active_num)
+      node->active_num--;
     // TRACE("Task [%d]: subtracting active num. Current AN: %d\n", tgid, node->active_num);
   }
 }
