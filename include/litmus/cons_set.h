@@ -31,7 +31,7 @@ static int is_cq_exist(cons_queue* list, struct task_struct* task) {
 static void cq_enqueue(cons_queue* list, struct task_struct* task) {
   if (!task)
     return NULL;
-  TRACE_TASK(task, "cq enqueue");
+  TRACE("cq enqueue");
   if (!list->head) {
     task->cq_prev = NULL;
     task->cq_next = NULL;
@@ -64,7 +64,7 @@ static struct task_struct* cq_dequeue(cons_queue* list) {
       return task;
     }
   }
-  TRACE_TASK(task, "cq dequeue");
+  TRACE("cq dequeue");
   return task;
 }
 
