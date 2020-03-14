@@ -316,12 +316,12 @@ static noinline void requeue(struct task_struct* task)
 	// 		pd_add(&cgedf_pd_list, tgid);
 	// 		__add_ready(&cgedf, task);
 	// 	}
-		pd_add(&cgedf_pd_list, tgid);
+	  // pd_add(&cgedf_pd_list, tgid);
 		__add_ready(&cgedf, task);
 	}
 	else {
 		/* it has got to wait */
-		pd_sub(&cgedf_pd_list, tgid);
+		// pd_sub(&cgedf_pd_list, tgid);
 		add_release(&cgedf, task);
 	}
 }
@@ -584,7 +584,7 @@ static noinline void curr_job_completion(int forced)
  */
 static struct task_struct* cgedf_schedule(struct task_struct * prev)
 {
-	TRACE("cgedf_schedule()\n");
+	// TRACE("cgedf_schedule()\n");
 	cpu_entry_t* entry = this_cpu_ptr(&cgedf_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
@@ -638,16 +638,16 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	 */
 	if (blocks) {
 
-		pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				__add_ready(&cgedf, resumed_task);
-			}
-		}
+		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
+		// if (!is_constrained(entry->scheduled)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
+		// 	BUG_ON(!node);
+		// 	resumed_task = cq_dequeue(&(node->queue));
+		// 	if (resumed_task) {
+		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
+		// 		__add_ready(&cgedf, resumed_task);
+		// 	}
+		// }
 
 		unlink(entry->scheduled);
 	}
@@ -659,16 +659,16 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	 */
 	if (np && (out_of_time || preempt || sleep)) {
 
-		pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				__add_ready(&cgedf, resumed_task);
-			}
-		}
+		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
+		// if (!is_constrained(entry->scheduled)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
+		// 	BUG_ON(!node);
+		// 	resumed_task = cq_dequeue(&(node->queue));
+		// 	if (resumed_task) {
+		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
+		// 		__add_ready(&cgedf, resumed_task);
+		// 	}
+		// }
 
 		unlink(entry->scheduled);
 		request_exit_np(entry->scheduled);
@@ -836,15 +836,15 @@ static void cgedf_task_exit(struct task_struct * t)
 		cgedf_cpus[tsk_rt(t)->scheduled_on]->scheduled = NULL;
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
-		pd_sub(&cgedf_pd_list, tgid);
-		if (!is_constrained(t)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			// BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				__add_ready(&cgedf, resumed_task);
-			}
+		// pd_sub(&cgedf_pd_list, tgid);
+		// if (!is_constrained(t)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		// 	// BUG_ON(!node);
+		// 	resumed_task = cq_dequeue(&(node->queue));
+		// 	if (resumed_task) {
+		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
+		// 		__add_ready(&cgedf, resumed_task);
+		// 	}
 	// 		else {
 	// TRACE("No constrained task.\n");
 	// 		}

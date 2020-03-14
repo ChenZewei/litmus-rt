@@ -135,6 +135,7 @@ static void pd_task_exit(pd_list* list, int tgid) {
 }
 
 static inline void pd_add(pd_list* list, int tgid) {
+  TRACE("pd_add\n");
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num++;
@@ -143,6 +144,7 @@ static inline void pd_add(pd_list* list, int tgid) {
 }
 
 static inline void pd_sub(pd_list* list, int tgid) {
+  TRACE("pd_add\n");
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->active_num--;
