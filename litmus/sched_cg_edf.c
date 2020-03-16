@@ -505,7 +505,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		if (bh_node->child) 
 			TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
 		// BUG_ON(!task);
-	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
+	TRACE_TASK(task, "Task [%d] [%d] releases. Degree: %d\n", task->pid, curr_tgid, bh_node->degree);
   // TRACE("Get a released task: %llu.\n", litmus_clock());
 		if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
 	TRACE_TASK(task, "Task enqueues to the constrained queue.\n");

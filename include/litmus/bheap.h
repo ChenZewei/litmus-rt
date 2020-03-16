@@ -57,6 +57,9 @@ struct bheap_node* bheap_peek(bheap_prio_t higher_prio,
 struct bheap_node* bheap_take(bheap_prio_t higher_prio,
 			    struct bheap* heap);
 
+struct bheap_node* bheap_take_2(bheap_prio_t higher_prio,
+			    struct bheap* heap);
+
 void bheap_uncache_min(bheap_prio_t higher_prio, struct bheap* heap);
 int  bheap_decrease(bheap_prio_t higher_prio, struct bheap_node* node);
 

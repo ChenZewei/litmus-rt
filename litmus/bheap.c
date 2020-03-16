@@ -219,6 +219,19 @@ struct bheap_node* bheap_take(bheap_prio_t higher_prio,
 	return node;
 }
 
+struct bheap_node* bheap_take_2(bheap_prio_t higher_prio,
+			    struct bheap* heap)
+{
+	struct bheap_node *node;
+	if (!heap->min)
+		heap->min = __bheap_extract_min(higher_prio, heap);
+	node = heap->min;
+	heap->min = NULL;
+	if (node)
+		node->degree = NOT_IN_HEAP;
+	return node;
+}
+
 int bheap_decrease(bheap_prio_t higher_prio, struct bheap_node* node)
 {
 	struct bheap_node  *parent;
