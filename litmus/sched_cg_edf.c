@@ -484,20 +484,24 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
-	while (temp) {
-		temp_task = bheap2task(temp);
-		TRACE("Task [%d] in heap.\n", temp_task->pid);
-		if (temp->parent) 
-			TRACE("Task [%d]'s parent task [%d].\n", temp_task->pid, bheap2task(temp->parent)->pid);
-		if (temp->child) 
-			TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temp->child)->pid);
-		temp = temp->next;
-	}
+	// while (temp) {
+	// 	temp_task = bheap2task(temp);
+	// 	TRACE("Task [%d] in heap.\n", temp_task->pid);
+	// 	if (temp->parent) 
+	// 		TRACE("Task [%d]'s parent task [%d].\n", temp_task->pid, bheap2task(temp->parent)->pid);
+	// 	if (temp->child) 
+	// 		TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temp->child)->pid);
+	// 	temp = temp->next;
+	// }
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {
 		task = bheap2task(bh_node);
 		curr_tgid = task->tgid;
+		if (bh_node->parent) 
+			TRACE("Task [%d]'s parent task [%d].\n", curr_tgid, bheap2task(bh_node->parent)->pid);
+		if (bh_node->child) 
+			TRACE("Task [%d]'s child task [%d].\n", curr_tgid, bheap2task(bh_node->child)->pid);
 		// BUG_ON(!task);
 	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
   // TRACE("Get a released task: %llu.\n", litmus_clock());
