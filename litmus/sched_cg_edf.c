@@ -501,7 +501,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		if (bh_node->parent) 
 			TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
 		if (bh_node->next) 
-			TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
+			TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
 		if (bh_node->child) 
 			TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
 		// BUG_ON(!task);
