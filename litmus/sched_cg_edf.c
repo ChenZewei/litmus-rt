@@ -474,13 +474,21 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
+	struct bheap_node* temp = bh_node;
 	struct task_struct* task;
+	struct task_struct* temp_task;
 	pd_node* node;
 	int last_constrained_tgid = MAX_INT, curr_tgid;
 	// cons_queue* c_queue;
 	TRACE("Tasks release.\n");
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
+
+	while (temp) {
+		temp_task = bheap2task(temp);
+		TRACE("Task [%d] in heap.\n", temp_task->pid);
+		temp = temp->next;
+	}
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {
