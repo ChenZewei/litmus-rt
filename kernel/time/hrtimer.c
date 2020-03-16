@@ -1510,11 +1510,9 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
 			TS_RELEASE_LATENCY(intended_release);
 		}
 #endif
-	TRACE("hrtimer_wakeup Timer 1: %llu.\n", litmus_clock());
-		TS_RELEASE_START;
+		// TS_RELEASE_START;
 		wake_up_process(task);
-		TS_RELEASE_END;
-	TRACE("hrtimer_wakeup Timer 2: %llu.\n", litmus_clock());
+		// TS_RELEASE_END;
 	}
 
 	return HRTIMER_NORESTART;
