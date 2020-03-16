@@ -487,6 +487,10 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	while (temp) {
 		temp_task = bheap2task(temp);
 		TRACE("Task [%d] in heap.\n", temp_task->pid);
+		if (temp->parent) 
+			TRACE("Task [%d]'s parent task [%d].\n", temp_task->pid, bheap2task(temptemp->parent)->pid);
+		if (temp->child) 
+			TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temptemp->child)->pid);
 		temp = temp->next;
 	}
 	
