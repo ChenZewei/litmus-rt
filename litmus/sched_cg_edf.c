@@ -549,8 +549,8 @@ static void POT_constrained(rt_domain_t* rt, struct bheap* tasks, struct bheap_n
 				cq_enqueue(&(node->queue), task);
 			}
 			// root->is_constrained = 1;
-			// root->degree = NOT_IN_HEAP;
-			bheap_delete(rt->order, tasks, root);
+			root->degree = NOT_IN_HEAP;
+			// bheap_delete(rt->order, tasks, root);
 		} else {
 			pd_add(&cgedf_pd_list, curr_tgid);
 			// root->is_constrained = 0;
