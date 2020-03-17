@@ -100,6 +100,21 @@ static  void __bheap_min(bheap_prio_t higher_prio, struct bheap* heap,
 	}
 }
 
+static void POT_test(struct bheap_node* root) {
+	struct task_struct* task;
+	if (!root)
+		return;
+	else {
+		if (root->child)
+			POT_test(root->child);
+		if (root->next)
+			POT_test(root->next);
+		task = bheap2task(root);
+		// TRACE("Task [%d] in heap.\n", task->pid);
+		TRACE("Task [%d] in heap.\n", task->pid);
+	}
+}
+
 static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 				struct bheap_node* h2)
 {
@@ -112,7 +127,14 @@ static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 		heap->head = h2;
 		return;
 	}
+		TRACE("Tree 1: \n");
+	  POT_test(h1);
+		TRACE("Tree 2: \n");
+	  POT_test(h2);
+		TRACE("Tree after merge: \n");
 	h1 = __bheap_merge(h1, h2);
+		POT_test(h1);
+
 	prev = NULL;
 	x    = h1;
 	next = x->next;

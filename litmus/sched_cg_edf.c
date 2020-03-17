@@ -478,8 +478,12 @@ static void POT(struct bheap_node* root) {
 	else {
 		if (root->child)
 			POT(root->child);
+
+
 		if (root->next)
 			POT(root->next);
+
+			
 		task = bheap2task(root);
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
