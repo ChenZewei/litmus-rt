@@ -474,7 +474,7 @@ static void POT(struct bheap_node* root) {
 	pd_node* node;
 	int curr_tgid;
 	if (!root)
-		return;
+		return NULL;
 	else {
 		if (root->child)
 			POT(root->child);
