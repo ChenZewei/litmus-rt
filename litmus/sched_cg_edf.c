@@ -475,7 +475,7 @@ static void POT(struct bheap_node* root) {
 		return NULL;
 	else {
 		task = bheap2task(root);
-		TRACE("Task [%d] in heap.\n", temp_task->pid);
+		TRACE("Task [%d] in heap.\n", task->pid);
 		if (root->child) {
 			POT(root->child);
 		}
