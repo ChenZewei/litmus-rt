@@ -105,6 +105,7 @@ static  void __bheap_min(bheap_prio_t higher_prio, struct bheap* heap,
 
 static void POT_test(struct bheap_node* root) {
 	struct task_struct* task;
+	int curr_tgid;
 	if (!root)
 		return;
 	else {
