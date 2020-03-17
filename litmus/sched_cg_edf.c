@@ -474,22 +474,23 @@ static void POT(struct bheap_node* root) {
 	pd_node* node;
 	int curr_tgid;
 	if (!root)
-		return NULL;
+		return;
 	else {
 		if (root->child)
 			POT(root->child);
 		if (root->next)
 			POT(root->next);
 		task = bheap2task(root);
-		curr_tgid = task->tgid;
-		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
-		if (root->parent) 
-			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
-		if (root->next) 
-			TRACE("  brother task [%d]", bheap2task(root->parent)->pid);
-		if (root->child) 
-			TRACE("  child task [%d]", bheap2task(root->child)->pid);
-		TRACE("\n");
+// 		TRACE("Task [%d] in heap.\n", task->pid);
+		// curr_tgid = task->tgid;
+		// TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
+		// if (root->parent) 
+		// 	TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
+		// if (root->next) 
+		// 	TRACE("  brother task [%d]", bheap2task(root->parent)->pid);
+		// if (root->child) 
+		// 	TRACE("  child task [%d]", bheap2task(root->child)->pid);
+		// TRACE("\n");
 		// if (is_constrained(task)) {
 		// 	node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
 		// 	// BUG_ON(!node);
