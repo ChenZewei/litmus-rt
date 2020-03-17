@@ -488,7 +488,7 @@ static void POT(struct bheap_node* root) {
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
 		if (bheap_node_in_heap(root))
-			TRACE("Task [%d] in heap.", task->pid, root->degree);
+			TRACE("Task [%d] in heap.", task->pid);
 		else
 			TRACE("Task [%d] not in heap.", task->pid, root->degree);
 		if (root->parent) 
@@ -521,11 +521,11 @@ static void POT_constrained(struct bheap_node* root) {
 		return;
 	else {
 		if (root->child)
-			POT(root->child);
+			POT_constrained(root->child);
 
 
 		if (root->next)
-			POT(root->next);
+			POT_constrained(root->next);
 
 			
 		task = bheap2task(root);
