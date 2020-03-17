@@ -617,7 +617,12 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 	} else {
   // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
 	// 		pd_add(&cgedf_pd_list, curr_tgid);
+		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+		if (!is_cq_exist(&(node->queue), task)) {
+
+	TRACE_TASK(task, "Not constrained.\n");
 			__add_ready(&cgedf, task);
+		}
 	// 		// check_for_preemption(task);
 	// 	}
   // TRACE("Finish adding at: %llu.\n", litmus_clock());

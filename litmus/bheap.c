@@ -132,7 +132,7 @@ static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 {
 	struct bheap_node* h1;
 	struct bheap_node *prev, *x, *next;
-	struct task_struct* task;
+	// struct task_struct* task;
 	if (!h2)
 		return;
 	h1 = heap->head;
@@ -151,8 +151,8 @@ static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 	prev = NULL;
 	x    = h1;
 	
-	task = ((struct task_struct*) x->value);
-	TRACE("x is Task [%d].\n", task->pid);
+	// task = ((struct task_struct*) x->value);
+	// TRACE("x is Task [%d].\n", task->pid);
 
 	next = x->next;
 	while (next) {
