@@ -140,13 +140,13 @@ static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 		heap->head = h2;
 		return;
 	}
-		TRACE("Tree 1: \n");
-	  POT_test(h1);
-		TRACE("Tree 2: \n");
-	  POT_test(h2);
-		TRACE("Tree after merge: \n");
+		// TRACE("Tree 1: \n");
+	  // POT_test(h1);
+		// TRACE("Tree 2: \n");
+	  // POT_test(h2);
+		// TRACE("Tree after merge: \n");
 	h1 = __bheap_merge(h1, h2);
-		POT_test(h1);
+		// POT_test(h1);
 
 	prev = NULL;
 	x    = h1;

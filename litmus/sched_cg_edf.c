@@ -488,9 +488,9 @@ static void POT(struct bheap_node* root) {
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
 		if (bheap_node_in_heap(root))
-			TRACE("Task [%d] in heap.", task->pid);
+			TRACE("Task [%d] [%d] in heap.", task->pid, curr_tgid);
 		else
-			TRACE("Task [%d] not in heap.", task->pid, root->degree);
+			TRACE("Task [%d] [%d] not in heap.", task->pid, curr_tgid);
 		if (root->parent) 
 			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
 		if (root->next) 
@@ -531,7 +531,10 @@ static void POT_constrained(struct bheap_node* root) {
 		task = bheap2task(root);
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
-		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
+		if (bheap_node_in_heap(root))
+			TRACE("Task [%d] [%d] in heap.", task->pid, curr_tgid);
+		else
+			TRACE("Task [%d] [%d] not in heap.", task->pid, curr_tgid);
 		if (root->parent) 
 			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
 		if (root->next) 
@@ -581,8 +584,10 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 	temp = temp->next;
 	// }
 	temp = tasks->head;
+	TRACE("POT constrained.\n");
 	POT_constrained(temp);
 	temp = tasks->head;
+	TRACE("POT.\n");
 	POT(temp);
 
 	bh_node = bheap_take(rt->order, tasks);
@@ -612,7 +617,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 	} else {
   // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
 	// 		pd_add(&cgedf_pd_list, curr_tgid);
-	// 		__add_ready(&cgedf, task);
+			__add_ready(&cgedf, task);
 	// 		// check_for_preemption(task);
 	// 	}
   // TRACE("Finish adding at: %llu.\n", litmus_clock());
