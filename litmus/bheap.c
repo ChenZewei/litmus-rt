@@ -2,6 +2,8 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <litmus/bheap.h>
+#include <litmus/debug_trace.h>
+#include <litmus/trace.h>
 
 void bheap_init(struct bheap* heap)
 {
