@@ -109,7 +109,7 @@ static void POT_test(struct bheap_node* root) {
 			POT_test(root->child);
 		if (root->next)
 			POT_test(root->next);
-		task = bheap2task(root);
+		task = ((struct task_struct*) root->value);
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		TRACE("Task [%d] in heap.\n", task->pid);
 	}
