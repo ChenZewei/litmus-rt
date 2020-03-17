@@ -476,8 +476,10 @@ static void POT(struct bheap_node* root) {
 	if (!root)
 		return;
 	else {
-		POT(root->child);
-		POT(root->next);
+		if (root->child)
+			POT(root->child);
+		if (root->next)
+			POT(root->next);
 		task = bheap2task(root);
 		curr_tgid = task->tgid;
 		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
