@@ -513,7 +513,7 @@ static void POT(struct bheap_node* root) {
 	}
 }
 
-static void POT_constrained(struct bheap* tasks, struct bheap_node* root) {
+static void POT_constrained(rt_domain_t* rt, struct bheap* tasks, struct bheap_node* root) {
 	struct task_struct* task;
 	pd_node* node;
 	int curr_tgid;
@@ -521,11 +521,11 @@ static void POT_constrained(struct bheap* tasks, struct bheap_node* root) {
 		return;
 	else {
 		if (root->child)
-			POT_constrained(tasks, root->child);
+			POT_constrained(rt, tasks, root->child);
 
 
 		if (root->next)
-			POT_constrained(tasks, root->next);
+			POT_constrained(rt, tasks, root->next);
 
 			
 		task = bheap2task(root);
@@ -550,7 +550,7 @@ static void POT_constrained(struct bheap* tasks, struct bheap_node* root) {
 			}
 			// root->is_constrained = 1;
 			// root->degree = NOT_IN_HEAP;
-			bheap_delete(&cgedf->order, tasks, root);
+			bheap_delete(rt->order, tasks, root);
 		} else {
 			pd_add(&cgedf_pd_list, curr_tgid);
 			// root->is_constrained = 0;
@@ -586,7 +586,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// }
 	temp = tasks->head;
 	TRACE("POT constrained.\n");
-	POT_constrained(tasks, temp);
+	POT_constrained(rt, tasks, temp);
 	temp = tasks->head;
 	TRACE("POT.\n");
 	POT(temp);
@@ -630,7 +630,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		bh_node = bheap_take(rt->order, tasks);
 	}
 
-	temp = &cgedf->ready_queue.head;
+	temp = rt->ready_queue.head;
 	TRACE("Ready queue.\n");
 	POT(temp);
 
