@@ -1,5 +1,6 @@
 #include <linux/bug.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
 #include <litmus/bheap.h>
 
 void bheap_init(struct bheap* heap)
