@@ -487,7 +487,10 @@ static void POT(struct bheap_node* root) {
 		task = bheap2task(root);
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
-		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
+		if (bheap_node_in_heap(root))
+			TRACE("Task [%d] in heap.", task->pid, root->degree);
+		else
+			TRACE("Task [%d] not in heap.", task->pid, root->degree);
 		if (root->parent) 
 			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
 		if (root->next) 
@@ -501,29 +504,55 @@ static void POT(struct bheap_node* root) {
 		// 	if (!is_cq_exist(&(node->queue), task)) {
 		// 		cq_enqueue(&(node->queue), task);
 		// 	}
-		// 	root->is_constrained = 1;
+		// 	// root->is_constrained = 1;
+		// 	root->degree = NOT_IN_HEAP;
 		// } else {
 		// 	pd_add(&cgedf_pd_list, curr_tgid);
-		// 	root->is_constrained = 0;
+		// 	// root->is_constrained = 0;
 		// }
 	}
 }
 
-// static void POT_constrained(struct bheap_node* root) {
-// 	struct task_struct* task;
-// 	if (!root)
-// 		return NULL;
-// 	else {
-// 		task = bheap2task(root);
-// 		TRACE("Task [%d] in heap.\n", task->pid);
-// 		if (root->child) {
-// 			POT(root->child);
-// 		}
-// 		if (root->next) {
-// 			POT(root->next);
-// 		}
-// 	}
-// }
+static void POT_constrained(struct bheap_node* root) {
+	struct task_struct* task;
+	pd_node* node;
+	int curr_tgid;
+	if (!root)
+		return;
+	else {
+		if (root->child)
+			POT(root->child);
+
+
+		if (root->next)
+			POT(root->next);
+
+			
+		task = bheap2task(root);
+		// TRACE("Task [%d] in heap.\n", task->pid);
+		curr_tgid = task->tgid;
+		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
+		if (root->parent) 
+			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
+		if (root->next) 
+			TRACE("  brother task [%d]", bheap2task(root->next)->pid);
+		if (root->child) 
+			TRACE("  child task [%d]", bheap2task(root->child)->pid);
+		TRACE("\n");
+		if (is_constrained(task)) {
+			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			// BUG_ON(!node);
+			if (!is_cq_exist(&(node->queue), task)) {
+				cq_enqueue(&(node->queue), task);
+			}
+			// root->is_constrained = 1;
+			root->degree = NOT_IN_HEAP;
+		} else {
+			pd_add(&cgedf_pd_list, curr_tgid);
+			// root->is_constrained = 0;
+		}
+	}
+}
 
 static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
@@ -568,21 +597,21 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 		// BUG_ON(!task);
 	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
   // TRACE("Get a released task: %llu.\n", litmus_clock());
-		if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
-	TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
-  // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
-			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), task)) {
-				cq_enqueue(&(node->queue), task);
-			}
-			last_constrained_tgid = curr_tgid;
-		} else {
-  // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
-			pd_add(&cgedf_pd_list, curr_tgid);
-			__add_ready(&cgedf, task);
-			// check_for_preemption(task);
-		}
+	// 	if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
+	// TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
+  // // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
+	// 		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+	// 		// BUG_ON(!node);
+	// 		if (!is_cq_exist(&(node->queue), task)) {
+	// 			cq_enqueue(&(node->queue), task);
+	// 		}
+	// 		last_constrained_tgid = curr_tgid;
+	// 	} else {
+  // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
+	// 		pd_add(&cgedf_pd_list, curr_tgid);
+	// 		__add_ready(&cgedf, task);
+	// 		// check_for_preemption(task);
+	// 	}
   // TRACE("Finish adding at: %llu.\n", litmus_clock());
 		bh_node = bheap_take(rt->order, tasks);
 	}
