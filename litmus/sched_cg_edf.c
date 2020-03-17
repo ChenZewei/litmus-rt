@@ -484,10 +484,10 @@ static void POT(struct bheap_node* root) {
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
 		TRACE("Task [%d] in heap. Degree: %d ", task->pid, root->degree);
-		// if (root->parent) 
-		// 	TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
+		if (root->parent) 
+			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
 		if (root->next) 
-			TRACE("  brother task [%d]", bheap2task(root->parent)->pid);
+			TRACE("  brother task [%d]", bheap2task(root->next)->pid);
 		if (root->child) 
 			TRACE("  child task [%d]", bheap2task(root->child)->pid);
 		TRACE("\n");
