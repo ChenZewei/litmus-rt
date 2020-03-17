@@ -156,8 +156,6 @@ static  void __bheap_union(bheap_prio_t higher_prio, struct bheap* heap,
 
 	next = x->next;
 	while (next) {
-		task = ((struct task_struct*) x->value);
-		TRACE("x is Task [%d].\n", task->pid);
 		if (x->degree != next->degree ||
 		    (next->next && next->next->degree == x->degree)) {
 			/* nothing to do, advance */
