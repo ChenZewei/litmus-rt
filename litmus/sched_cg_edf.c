@@ -471,17 +471,34 @@ static noinline void cgedf_job_arrival(struct task_struct* task)
 
 static void POT(struct bheap_node* root) {
 	struct task_struct* task;
+	pd_node* node;
+	int curr_tgid;
 	if (!root)
-		return NULL;
+		return;
 	else {
-		if (root->next) {
-			POT(root->next);
-		}
-		if (root->child) {
-			POT(root->child);
-		}
+		POT(root->child);
+		POT(root->next);
 		task = bheap2task(root);
-		TRACE("Task [%d] in heap.\n", task->pid);
+		curr_tgid = task->tgid;
+		TRACE("Task [%d] in heap. Degree: %d ", task->pid. root->degree);
+		if (temp->parent) 
+			TRACE("  parent task [%d].", bheap2task(root->parent)->pid);
+		if (temp->next) 
+			TRACE("  brother task [%d].", bheap2task(root->parent)->pid);
+		if (temp->child) 
+			TRACE("  child task [%d].", bheap2task(root->child)->pid);
+		TRACE("\n");
+		// if (is_constrained(task)) {
+		// 	node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+		// 	// BUG_ON(!node);
+		// 	if (!is_cq_exist(&(node->queue), task)) {
+		// 		cq_enqueue(&(node->queue), task);
+		// 	}
+		// 	root->is_constrained = 1;
+		// } else {
+		// 	pd_add(&cgedf_pd_list, curr_tgid);
+		// 	root->is_constrained = 0;
+		// }
 	}
 }
 
