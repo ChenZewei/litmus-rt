@@ -570,8 +570,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
-	temp = tasks->head;
-	POT(temp);
+
 	// while (temp) {
 	// 	temp_task = bheap2task(temp);
 	// 	TRACE("Task [%d] in heap.\n", temp_task->pid);
@@ -581,6 +580,10 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 		TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temp->child)->pid);
 	// 	temp = temp->next;
 	// }
+	temp = tasks->head;
+	POT_constrained(temp);
+	temp = tasks->head;
+	POT(temp);
 
 	bh_node = bheap_take(rt->order, tasks);
 	
