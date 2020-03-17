@@ -469,7 +469,7 @@ static noinline void cgedf_job_arrival(struct task_struct* task)
 	check_for_preemptions();
 }
 
-static void POT(bheap_node* root) {
+static void POT(struct bheap_node* root) {
 	struct task_struct* task;
 	if (!root)
 		return NULL;
