@@ -469,12 +469,29 @@ static noinline void cgedf_job_arrival(struct task_struct* task)
 	check_for_preemptions();
 }
 
+static void POT(bheap_node* root) {
+	struct task_struct* task;
+	if (!root)
+		return NULL;
+	else {
+		task = bheap2task(root);
+		TRACE("Task [%d] in heap.\n", temp_task->pid);
+		if (root->child) {
+			POT(root->child);
+		}
+		if (root->brother) {
+			POT(root->brother);
+		}
+	}
+}
+
 static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
+	// struct bheap_node* bh_node;
 	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
-	struct bheap_node* temp = bh_node;
+	struct bheap_node* temp;
 	struct task_struct* task;
 	struct task_struct* temp_task;
 	pd_node* node;
@@ -484,6 +501,8 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
+	temp = tasks->head;
+	POT(temp);
 	// while (temp) {
 	// 	temp_task = bheap2task(temp);
 	// 	TRACE("Task [%d] in heap.\n", temp_task->pid);
@@ -493,19 +512,21 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 		TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temp->child)->pid);
 	// 	temp = temp->next;
 	// }
+
+	// bh_node = bheap_take(rt->order, tasks);
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {
 		task = bheap2task(bh_node);
 		curr_tgid = task->tgid;
-		if (bh_node->parent) 
-			TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
-		if (bh_node->next) 
-			TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
-		if (bh_node->child) 
-			TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
+		// if (bh_node->parent) 
+		// 	TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
+		// if (bh_node->next) 
+		// 	TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
+		// if (bh_node->child) 
+		// 	TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
 		// BUG_ON(!task);
-	TRACE_TASK(task, "Task [%d] [%d] releases. Degree: %d\n", task->pid, curr_tgid, bh_node->degree);
+	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
   // TRACE("Get a released task: %llu.\n", litmus_clock());
 		if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
 	TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
