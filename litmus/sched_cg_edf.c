@@ -474,23 +474,39 @@ static void POT(struct bheap_node* root) {
 	if (!root)
 		return NULL;
 	else {
-		task = bheap2task(root);
-		TRACE("Task [%d] in heap.\n", task->pid);
-		if (root->child) {
-			POT(root->child);
-		}
 		if (root->next) {
 			POT(root->next);
 		}
+		if (root->child) {
+			POT(root->child);
+		}
+		task = bheap2task(root);
+		TRACE("Task [%d] in heap.\n", task->pid);
 	}
 }
+
+// static void POT_constrained(struct bheap_node* root) {
+// 	struct task_struct* task;
+// 	if (!root)
+// 		return NULL;
+// 	else {
+// 		task = bheap2task(root);
+// 		TRACE("Task [%d] in heap.\n", task->pid);
+// 		if (root->child) {
+// 			POT(root->child);
+// 		}
+// 		if (root->next) {
+// 			POT(root->next);
+// 		}
+// 	}
+// }
 
 static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
-	// struct bheap_node* bh_node;
-	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
+	struct bheap_node* bh_node;
+	// struct bheap_node* bh_node = bheap_take(rt->order, tasks);
 	struct bheap_node* temp;
 	struct task_struct* task;
 	struct task_struct* temp_task;
@@ -513,7 +529,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// 	temp = temp->next;
 	// }
 
-	// bh_node = bheap_take(rt->order, tasks);
+	bh_node = bheap_take(rt->order, tasks);
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	while (bh_node) {

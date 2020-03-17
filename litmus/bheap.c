@@ -15,6 +15,7 @@ void bheap_node_init(struct bheap_node** _h, void* value)
 	h->next   = NULL;
 	h->child  = NULL;
 	h->degree = NOT_IN_HEAP;
+	h->is_constrained = 0;
 	h->value  = value;
 	h->ref    = _h;
 }

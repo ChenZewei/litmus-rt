@@ -14,6 +14,7 @@ struct bheap_node {
 	struct bheap_node* 	child;
 
 	unsigned int 		degree;
+	unsigned int    is_constrained;
 	void*			value;
 	struct bheap_node**	ref;
 };
