@@ -479,8 +479,8 @@ static void POT(struct bheap_node* root) {
 		if (root->child) {
 			POT(root->child);
 		}
-		if (root->brother) {
-			POT(root->brother);
+		if (root->next) {
+			POT(root->next);
 		}
 	}
 }
