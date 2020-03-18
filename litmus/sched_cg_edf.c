@@ -575,24 +575,24 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
-	struct bheap_node* bh_node;
+	// struct bheap_node* bh_node;
 	// struct bheap_node* bh_node = bheap_take(rt->order, tasks);
-	struct bheap_node* temp;
-	struct task_struct* task;
-	struct task_struct* temp_task;
-	pd_node* node;
-	int last_constrained_tgid = MAX_INT, curr_tgid;
+	// struct bheap_node* temp;
+	// struct task_struct* task;
+	// struct task_struct* temp_task;
+	// pd_node* node;
+	// int last_constrained_tgid = MAX_INT, curr_tgid;
 	// cons_queue* c_queue;
 	TRACE("Tasks release.\n");
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
-	temp = tasks->head;
+	// temp = tasks->head;
 	// TRACE("POT constrained.\n");
 	// POT_constrained(rt, tasks, temp);
 	// temp = tasks->head;
-	TRACE("POT.\n");
-	POT(temp);
+	// TRACE("POT.\n");
+	// POT(temp);
 
 	// bh_node = bheap_take(rt->order, tasks);
 	
@@ -641,9 +641,7 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
   // TRACE("Finish releasing: %llu.\n", litmus_clock());
 	// bheap_init(tasks);
 	__merge_ready(rt, tasks);
-  // TRACE("Check for preemptions: %llu.\n", litmus_clock());
 	check_for_preemptions();
-  // TRACE("Finish preemption checking: %llu.\n", litmus_clock());
 	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
@@ -951,18 +949,19 @@ static void cgedf_task_wake_up(struct task_struct *task)
 		inferred_sporadic_job_release_at(task, now);
 	}
 
-	if (is_constrained(task)) {	
-		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-		// BUG_ON(!node);
-		if (!is_cq_exist(&(node->queue), task)) {
-			cq_enqueue(&(node->queue), task);
-		}
-	} else {
-		// pd_add(&cgedf_pd_list, tgid);
-		// add_release(&cgedf, task);
-		cgedf_job_arrival(task);
-	}
+	// if (is_constrained(task)) {	
+	// 	node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+	// 	// BUG_ON(!node);
+	// 	if (!is_cq_exist(&(node->queue), task)) {
+	// 		cq_enqueue(&(node->queue), task);
+	// 	}
+	// } else {
+	// 	// pd_add(&cgedf_pd_list, tgid);
+	// 	// add_release(&cgedf, task);
+	// 	cgedf_job_arrival(task);
+	// }
 
+	cgedf_job_arrival(task);
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
 
