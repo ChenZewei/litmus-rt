@@ -661,7 +661,18 @@ static noinline void curr_job_completion(int forced)
 	tgid = t->tgid;	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
+	
 	pd_sub(&cgedf_pd_list, t->tgid);
+	/* set flags */
+	tsk_rt(t)->completed = 0;
+	/* prepare for next period */
+	prepare_for_next_period(t);
+	if (is_early_releasing(t) || is_released(t, litmus_clock())) {
+	TRACE_TASK(t, "Still need to run.\n");
+		pd_add(&cgedf_pd_list, t->tgid);
+		sched_trace_task_release(t);
+	}
+
 	if (!is_constrained(t)) {
 		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
 		// BUG_ON(!node);
@@ -683,18 +694,30 @@ static noinline void curr_job_completion(int forced)
 		}
 	}
 
-	/* set flags */
-	tsk_rt(t)->completed = 0;
-	/* prepare for next period */
-	prepare_for_next_period(t);
-	if (is_early_releasing(t) || is_released(t, litmus_clock()))
-		sched_trace_task_release(t);
 	/* unlink */
 	unlink(t);
 	/* requeue
 	 * But don't requeue a blocking task. */
-	if (is_current_running())
+	if (is_current_running()) {
 		cgedf_job_arrival(t);
+		// if (is_early_releasing(t) || is_released(t, litmus_clock())) {
+		// 	pd_add(&cgedf_pd_list, t->tgid);
+		// 	__add_ready(&cgedf, t);
+		// } else {
+			
+		// 	if (is_constrained(t)) {
+		// 		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		// 		// BUG_ON(!node);
+		// 		if (!is_cq_exist(&(node->queue), t)) {
+		// 			cq_enqueue(&(node->queue), t);
+		// 		}
+		// 	} else {
+		// 		pd_add(&cgedf_pd_list, tgid);
+		// 		add_release(&cgedf, t);
+		// 	}
+		// }
+		// check_for_preemptions();
+	}
 }
 
 
