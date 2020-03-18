@@ -906,7 +906,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 				cq_enqueue(&(node->queue), t);
 			}
 		} else {
-			pd_add(&cgedf_pd_list, curr_tgid);
+			pd_add(&cgedf_pd_list, tgid);
 			entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
 			BUG_ON(entry->scheduled);
 
