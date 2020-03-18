@@ -587,12 +587,12 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
-	// temp = tasks->head;
+	temp = tasks->head;
 	// TRACE("POT constrained.\n");
 	// POT_constrained(rt, tasks, temp);
 	// temp = tasks->head;
-	// TRACE("POT.\n");
-	// POT(temp);
+	TRACE("POT.\n");
+	POT(temp);
 
 	// bh_node = bheap_take(rt->order, tasks);
 	
@@ -884,6 +884,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
 	TRACE("cgedf_task_new()\n");
 	unsigned long 		flags;
+	pd_node* node;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
 
@@ -894,25 +895,39 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid);
 
+	
+
 	if (is_scheduled) {
-		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
-		BUG_ON(entry->scheduled);
+	TRACE("is_scheduled\n");
+		if (is_constrained(t)) {
+			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			// BUG_ON(!node);
+			if (!is_cq_exist(&(node->queue), t)) {
+				cq_enqueue(&(node->queue), t);
+			}
+		} else {
+			pd_add(&cgedf_pd_list, curr_tgid);
+			entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
+			BUG_ON(entry->scheduled);
 
 #ifdef CONFIG_RELEASE_MASTER
-		if (entry->cpu != cgedf.release_master) {
+			if (entry->cpu != cgedf.release_master) {
 #endif
-			entry->scheduled = t;
-			tsk_rt(t)->scheduled_on = task_cpu(t);
+				entry->scheduled = t;
+				tsk_rt(t)->scheduled_on = task_cpu(t);
 #ifdef CONFIG_RELEASE_MASTER
-		} else {
-			/* do not schedule on release master */
-			preempt(entry); /* force resched */
-			tsk_rt(t)->scheduled_on = NO_CPU;
-		}
+			} else {
+				/* do not schedule on release master */
+				preempt(entry); /* force resched */
+				tsk_rt(t)->scheduled_on = NO_CPU;
+			}
 #endif
+		}
 	} else {
 		t->rt_param.scheduled_on = NO_CPU;
 	}
+
+
 	t->rt_param.linked_on = NO_CPU;
 
 	if (on_rq || is_scheduled)
