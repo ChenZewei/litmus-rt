@@ -1012,7 +1012,7 @@ static void cgedf_task_exit(struct task_struct * t)
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					sched_trace_task_release(resumed_task);
-					(&cgedf, resumed_task);
+					__add_ready(&cgedf, resumed_task);
 				}
 				else {
 				/* it has got to wait */
