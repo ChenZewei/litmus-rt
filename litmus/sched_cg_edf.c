@@ -898,31 +898,23 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	
 
 	if (is_scheduled) {
-	TRACE("is_scheduled\n");
-		if (is_constrained(t)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), t)) {
-				cq_enqueue(&(node->queue), t);
-			}
-		} else {
-			pd_add(&cgedf_pd_list, tgid);
-			entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
-			BUG_ON(entry->scheduled);
+		TRACE("is_scheduled\n");
+		pd_add(&cgedf_pd_list, tgid);
+		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
+		BUG_ON(entry->scheduled);
 
 #ifdef CONFIG_RELEASE_MASTER
-			if (entry->cpu != cgedf.release_master) {
+		if (entry->cpu != cgedf.release_master) {
 #endif
-				entry->scheduled = t;
-				tsk_rt(t)->scheduled_on = task_cpu(t);
+			entry->scheduled = t;
+			tsk_rt(t)->scheduled_on = task_cpu(t);
 #ifdef CONFIG_RELEASE_MASTER
-			} else {
-				/* do not schedule on release master */
-				preempt(entry); /* force resched */
-				tsk_rt(t)->scheduled_on = NO_CPU;
-			}
-#endif
+		} else {
+			/* do not schedule on release master */
+			preempt(entry); /* force resched */
+			tsk_rt(t)->scheduled_on = NO_CPU;
 		}
+#endif
 	} else {
 		t->rt_param.scheduled_on = NO_CPU;
 	}
