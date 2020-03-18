@@ -900,7 +900,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 		TRACE("is_scheduled\n");
 		// pd_add(&cgedf_pd_list, tgid);
 		// if t is constrained, it cannot be scheduled
-		if (is_constrained(t))) {
+		if (is_constrained(t)) {
 			constrained = 1;
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
 			// BUG_ON(!node);
