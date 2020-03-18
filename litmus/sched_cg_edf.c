@@ -904,6 +904,8 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	if (is_scheduled) {
 		TRACE("is_scheduled\n");
 		// pd_add(&cgedf_pd_list, tgid);
+
+		
 		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
 		BUG_ON(entry->scheduled);
 
