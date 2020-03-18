@@ -298,9 +298,11 @@ static noinline void requeue(struct task_struct* task)
 	TRACE("requeue()\n");
 	int tgid = task->tgid;
 	pd_node* node;
+	int curr_tgid;
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
+	curr_tgid = task->tgid;
 
 	// TRACE("Requeuing.\n");
 	// if ((is_early_releasing(task) || is_released(task, litmus_clock())) && (!is_constrained(task)))
@@ -322,7 +324,16 @@ static noinline void requeue(struct task_struct* task)
 	else {
 		/* it has got to wait */
 		// pd_sub(&cgedf_pd_list, tgid);
-		add_release(&cgedf, task);
+		if (is_constrained(task)) {
+			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			// BUG_ON(!node);
+			if (!is_cq_exist(&(node->queue), task)) {
+				cq_enqueue(&(node->queue), task);
+			}
+		} else {
+			pd_add(&cgedf_pd_list, curr_tgid);
+			add_release(&cgedf, task);
+		}
 	}
 }
 
@@ -543,12 +554,14 @@ static void POT_constrained(rt_domain_t* rt, struct bheap* tasks, struct bheap_n
 			TRACE("  child task [%d]", bheap2task(root->child)->pid);
 		TRACE("\n");
 		if (is_constrained(task)) {
-			// node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-			// // BUG_ON(!node);
-			// if (!is_cq_exist(&(node->queue), task)) {
-			// 	cq_enqueue(&(node->queue), task);
-			// }
+			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			// BUG_ON(!node);
+			if (!is_cq_exist(&(node->queue), task)) {
+				cq_enqueue(&(node->queue), task);
+			}
 			// root->is_constrained = 1;
+			// if (root == tasks->min)
+			// 	tasks->min = NULL;
 			root->degree = NOT_IN_HEAP;
 			// bheap_delete(rt->order, tasks, root);
 		} else {
@@ -574,24 +587,14 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
+	// temp = tasks->head;
+	// TRACE("POT constrained.\n");
+	// POT_constrained(rt, tasks, temp);
+	// temp = tasks->head;
+	// TRACE("POT.\n");
+	// POT(temp);
 
-	// while (temp) {
-	// 	temp_task = bheap2task(temp);
-	// 	TRACE("Task [%d] in heap.\n", temp_task->pid);
-	// 	if (temp->parent) 
-	// 		TRACE("Task [%d]'s parent task [%d].\n", temp_task->pid, bheap2task(temp->parent)->pid);
-	// 	if (temp->child) 
-	// 		TRACE("Task [%d]'s child task [%d].\n", temp_task->pid, bheap2task(temp->child)->pid);
-	// 	temp = temp->next;
-	// }
-	temp = tasks->head;
-	TRACE("POT constrained.\n");
-	POT_constrained(rt, tasks, temp);
-	temp = tasks->head;
-	TRACE("POT.\n");
-	POT(temp);
-
-	bh_node = bheap_take(rt->order, tasks);
+	// bh_node = bheap_take(rt->order, tasks);
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
 	// while (bh_node) {
@@ -631,15 +634,13 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	// }
 
 
-	__merge_ready(rt, tasks);
-
-	temp = rt->ready_queue.head;
-	TRACE("Ready queue.\n");
-	POT(temp);
+	// temp = rt->ready_queue.head;
+	// TRACE("Ready queue.\n");
+	// POT(temp);
 
   // TRACE("Finish releasing: %llu.\n", litmus_clock());
 	// bheap_init(tasks);
-	// __merge_ready(rt, tasks);
+	__merge_ready(rt, tasks);
   // TRACE("Check for preemptions: %llu.\n", litmus_clock());
 	check_for_preemptions();
   // TRACE("Finish preemption checking: %llu.\n", litmus_clock());
