@@ -1003,7 +1003,7 @@ static void cgedf_task_exit(struct task_struct * t)
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
-				TS_RELEASE_START
+				// TS_RELEASE_START
 				// pd_add(&cgedf_pd_list, resumed_task->tgid);
 				// cgedf_job_arrival(resumed_task);
 				// __add_ready(&cgedf, resumed_task);
@@ -1015,7 +1015,7 @@ static void cgedf_task_exit(struct task_struct * t)
 				/* it has got to wait */
 					add_release(&cgedf, resumed_task);
 				}
-				TS_RELEASE_END
+				// TS_RELEASE_END
 			}
 		}
 		TRACE_TASK(t, "Active num::%d\n", get_active_num(&cgedf_pd_list, tgid));
