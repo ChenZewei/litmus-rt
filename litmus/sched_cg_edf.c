@@ -659,7 +659,6 @@ static noinline void curr_job_completion(int forced)
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
 	tgid = t->tgid;	
-	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	pd_sub(&cgedf_pd_list, t->tgid);
@@ -677,12 +676,12 @@ static noinline void curr_job_completion(int forced)
 				__add_ready(&cgedf, resumed_task);
 			}
 			else {
-				/* it has got to wait */
-					add_release(&cgedf, resumed_task);
-				}
+			/* it has got to wait */
+				add_release(&cgedf, resumed_task);
 			}
 			TS_RELEASE_END
 		}
+	}
 
 	/* set flags */
 	tsk_rt(t)->completed = 0;
@@ -1009,14 +1008,10 @@ static void cgedf_task_exit(struct task_struct * t)
 					__add_ready(&cgedf, resumed_task);
 				}
 				else {
-					/* it has got to wait */
-						add_release(&cgedf, resumed_task);
-					}
+				/* it has got to wait */
+					add_release(&cgedf, resumed_task);
 				}
 				TS_RELEASE_END
-			}
-			else {
-	TRACE("No constrained task.\n");
 			}
 		}
 		TRACE_TASK(t, "Active num::%d\n", get_active_num(&cgedf_pd_list, tgid));
