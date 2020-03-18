@@ -670,8 +670,8 @@ static noinline void curr_job_completion(int forced)
 		if (resumed_task) {
 			TS_RELEASE_START
 			pd_add(&cgedf_pd_list, resumed_task->tgid);
-			// cgedf_job_arrival(resumed_task);
-			__add_ready(&cgedf, resumed_task);
+			cgedf_job_arrival(resumed_task);
+			// __add_ready(&cgedf, resumed_task);
 			TS_RELEASE_END
 		}
 // 		 else {
@@ -896,10 +896,9 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	pd_task_release(&cgedf_pd_list, cgedf_pd_stack, tgid);
 
 	
-
 	if (is_scheduled) {
 		TRACE("is_scheduled\n");
-		pd_add(&cgedf_pd_list, tgid);
+		// pd_add(&cgedf_pd_list, tgid);
 		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
 		BUG_ON(entry->scheduled);
 
@@ -984,8 +983,8 @@ static void cgedf_task_exit(struct task_struct * t)
 			if (resumed_task) {
 				TS_RELEASE_START
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
-				// cgedf_job_arrival(resumed_task);
-				__add_ready(&cgedf, resumed_task);
+				cgedf_job_arrival(resumed_task);
+				// __add_ready(&cgedf, resumed_task);
 				TS_RELEASE_END
 			}
 			else {
