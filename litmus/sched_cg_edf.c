@@ -653,31 +653,36 @@ static noinline void curr_job_completion(int forced)
 {
 	TRACE("curr_job_completion()\n");
 	struct task_struct *t = current;
-	// int tgid;
+	int tgid;
 	pd_node* node;
 	struct task_struct* resumed_task;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
-
-	// tgid = t->tgid;	
+	tgid = t->tgid;	
+	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	pd_sub(&cgedf_pd_list, t->tgid);
 	if (!is_constrained(t)) {
-		node = find_pd_node_in_list(&cgedf_pd_list, t->tgid);
-		BUG_ON(!node);
+		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		// BUG_ON(!node);
 		resumed_task = cq_dequeue(&(node->queue));
 		if (resumed_task) {
 			TS_RELEASE_START
 			// pd_add(&cgedf_pd_list, resumed_task->tgid);
-			cgedf_job_arrival(resumed_task);
+			// cgedf_job_arrival(resumed_task);
 			// __add_ready(&cgedf, resumed_task);
+			pd_add(&cgedf_pd_list, resumed_task->tgid);
+			if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
+				__add_ready(&cgedf, resumed_task);
+			}
+			else {
+				/* it has got to wait */
+					add_release(&cgedf, resumed_task);
+				}
+			}
 			TS_RELEASE_END
 		}
-// 		 else {
-// TRACE("No constrained task.\n");
-// 		}
-	}
 
 	/* set flags */
 	tsk_rt(t)->completed = 0;
@@ -997,8 +1002,17 @@ static void cgedf_task_exit(struct task_struct * t)
 			if (resumed_task) {
 				TS_RELEASE_START
 				// pd_add(&cgedf_pd_list, resumed_task->tgid);
-				cgedf_job_arrival(resumed_task);
+				// cgedf_job_arrival(resumed_task);
 				// __add_ready(&cgedf, resumed_task);
+				pd_add(&cgedf_pd_list, resumed_task->tgid);
+				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
+					__add_ready(&cgedf, resumed_task);
+				}
+				else {
+					/* it has got to wait */
+						add_release(&cgedf, resumed_task);
+					}
+				}
 				TS_RELEASE_END
 			}
 			else {
