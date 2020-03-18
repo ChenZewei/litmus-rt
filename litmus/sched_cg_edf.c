@@ -887,7 +887,6 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	pd_node* node;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
-	unsigned int constrained = 0;
 
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
@@ -899,32 +898,21 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	if (is_scheduled) {
 		TRACE("is_scheduled\n");
 		// pd_add(&cgedf_pd_list, tgid);
-		// if t is constrained, it cannot be scheduled
-		if (is_constrained(t)) {
-			constrained = 1;
-			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), t)) {
-				cq_enqueue(&(node->queue), t);
-			}
-		} else {
-			pd_add(&cgedf_pd_list, tgid);
-			entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
-			BUG_ON(entry->scheduled);
+		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
+		BUG_ON(entry->scheduled);
 
 #ifdef CONFIG_RELEASE_MASTER
-			if (entry->cpu != cgedf.release_master) {
+		if (entry->cpu != cgedf.release_master) {
 #endif
-				entry->scheduled = t;
-				tsk_rt(t)->scheduled_on = task_cpu(t);
+			entry->scheduled = t;
+			tsk_rt(t)->scheduled_on = task_cpu(t);
 #ifdef CONFIG_RELEASE_MASTER
-			} else {
-				/* do not schedule on release master */
-				preempt(entry); /* force resched */
-				tsk_rt(t)->scheduled_on = NO_CPU;
-			}
-#endif
+		} else {
+			/* do not schedule on release master */
+			preempt(entry); /* force resched */
+			tsk_rt(t)->scheduled_on = NO_CPU;
 		}
+#endif
 		
 	} else {
 		t->rt_param.scheduled_on = NO_CPU;
@@ -933,7 +921,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 	t->rt_param.linked_on = NO_CPU;
 
-	if ((on_rq || is_scheduled)&&(!constrained))
+	if (on_rq || is_scheduled)
 		cgedf_job_arrival(t);
 	
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
@@ -944,6 +932,8 @@ static void cgedf_task_wake_up(struct task_struct *task)
 	TRACE("cgedf_task_wake_up()\n");
 	unsigned long flags;
 	lt_t now;
+	pd_node* node;
+	int tgid = task->tgid;
 
 	TRACE_TASK(task, "wake_up at %llu\n", litmus_clock());
 
@@ -952,7 +942,19 @@ static void cgedf_task_wake_up(struct task_struct *task)
 	if (is_sporadic(task) && is_tardy(task, now)) {
 		inferred_sporadic_job_release_at(task, now);
 	}
-	cgedf_job_arrival(task);
+
+	if (is_constrained(task)) {	
+		node = find_pd_node_in_list(&cgedf_pd_list, tgid);
+		// BUG_ON(!node);
+		if (!is_cq_exist(&(node->queue), task)) {
+			cq_enqueue(&(node->queue), task);
+		}
+	} else {
+		pd_add(&cgedf_pd_list, tgid);
+		// add_release(&cgedf, task);
+		cgedf_job_arrival(task);
+	}
+
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
 
