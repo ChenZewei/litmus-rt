@@ -669,7 +669,7 @@ static noinline void curr_job_completion(int forced)
 		resumed_task = cq_dequeue(&(node->queue));
 		if (resumed_task) {
 			TS_RELEASE_START
-			pd_add(&cgedf_pd_list, resumed_task->tgid);
+			// pd_add(&cgedf_pd_list, resumed_task->tgid);
 			cgedf_job_arrival(resumed_task);
 			// __add_ready(&cgedf, resumed_task);
 			TS_RELEASE_END
@@ -950,7 +950,7 @@ static void cgedf_task_wake_up(struct task_struct *task)
 			cq_enqueue(&(node->queue), task);
 		}
 	} else {
-		pd_add(&cgedf_pd_list, tgid);
+		// pd_add(&cgedf_pd_list, tgid);
 		// add_release(&cgedf, task);
 		cgedf_job_arrival(task);
 	}
@@ -996,7 +996,7 @@ static void cgedf_task_exit(struct task_struct * t)
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
 				TS_RELEASE_START
-				pd_add(&cgedf_pd_list, resumed_task->tgid);
+				// pd_add(&cgedf_pd_list, resumed_task->tgid);
 				cgedf_job_arrival(resumed_task);
 				// __add_ready(&cgedf, resumed_task);
 				TS_RELEASE_END
