@@ -594,41 +594,44 @@ static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	bh_node = bheap_take(rt->order, tasks);
 	
   // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
-	while (bh_node) {
-		task = bheap2task(bh_node);
-		curr_tgid = task->tgid;
-		// if (bh_node->parent) 
-		// 	TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
-		// if (bh_node->next) 
-		// 	TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
-		// if (bh_node->child) 
-		// 	TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
-		// BUG_ON(!task);
-	TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
-  // TRACE("Get a released task: %llu.\n", litmus_clock());
-	// 	if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
-	// TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
-  // // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
-	// 		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-	// 		// BUG_ON(!node);
-	// 		if (!is_cq_exist(&(node->queue), task)) {
-	// 			cq_enqueue(&(node->queue), task);
-	// 		}
-	// 		last_constrained_tgid = curr_tgid;
-	// 	} else {
-  // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
-	// 		pd_add(&cgedf_pd_list, curr_tgid);
-		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-		if (!is_cq_exist(&(node->queue), task)) {
+	// while (bh_node) {
+	// 	task = bheap2task(bh_node);
+	// 	curr_tgid = task->tgid;
+	// 	// if (bh_node->parent) 
+	// 	// 	TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
+	// 	// if (bh_node->next) 
+	// 	// 	TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
+	// 	// if (bh_node->child) 
+	// 	// 	TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
+	// 	// BUG_ON(!task);
+	// TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
+  // // TRACE("Get a released task: %llu.\n", litmus_clock());
+	// // 	if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
+	// // TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
+  // // // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
+	// // 		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+	// // 		// BUG_ON(!node);
+	// // 		if (!is_cq_exist(&(node->queue), task)) {
+	// // 			cq_enqueue(&(node->queue), task);
+	// // 		}
+	// // 		last_constrained_tgid = curr_tgid;
+	// // 	} else {
+  // // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
+	// // 		pd_add(&cgedf_pd_list, curr_tgid);
+	// 	node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+	// 	if (!is_cq_exist(&(node->queue), task)) {
 
-	TRACE_TASK(task, "Not constrained.\n");
-			__add_ready(&cgedf, task);
-		}
-	// 		// check_for_preemption(task);
+	// TRACE_TASK(task, "Not constrained.\n");
+	// 		__add_ready(&cgedf, task);
 	// 	}
-  // TRACE("Finish adding at: %llu.\n", litmus_clock());
-		bh_node = bheap_take(rt->order, tasks);
-	}
+	// // 		// check_for_preemption(task);
+	// // 	}
+  // // TRACE("Finish adding at: %llu.\n", litmus_clock());
+	// 	bh_node = bheap_take(rt->order, tasks);
+	// }
+
+
+	__merge_ready(rt, tasks);
 
 	temp = rt->ready_queue.head;
 	TRACE("Ready queue.\n");
