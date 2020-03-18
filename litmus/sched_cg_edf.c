@@ -900,7 +900,7 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	if (is_scheduled) {
 	TRACE("is_scheduled\n");
 		if (is_constrained(t)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
 			// BUG_ON(!node);
 			if (!is_cq_exist(&(node->queue), t)) {
 				cq_enqueue(&(node->queue), t);
