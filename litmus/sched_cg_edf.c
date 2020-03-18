@@ -543,11 +543,11 @@ static void POT_constrained(rt_domain_t* rt, struct bheap* tasks, struct bheap_n
 			TRACE("  child task [%d]", bheap2task(root->child)->pid);
 		TRACE("\n");
 		if (is_constrained(task)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), task)) {
-				cq_enqueue(&(node->queue), task);
-			}
+			// node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
+			// // BUG_ON(!node);
+			// if (!is_cq_exist(&(node->queue), task)) {
+			// 	cq_enqueue(&(node->queue), task);
+			// }
 			// root->is_constrained = 1;
 			root->degree = NOT_IN_HEAP;
 			// bheap_delete(rt->order, tasks, root);
