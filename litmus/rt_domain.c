@@ -66,21 +66,19 @@ static enum hrtimer_restart on_release_timer(struct hrtimer *timer)
 
 	TS_RELEASE_START;
 
-
-	TRACE("Timer 1: %llu.\n", litmus_clock());
-
+	TRACE("Timer 1: %llu \n", litmus_clock());
+	
 	raw_spin_lock_irqsave(&rh->dom->release_lock, flags);
 	VTRACE("CB has the release_lock 0x%p\n", &rh->dom->release_lock);
 	/* remove from release queue */
 	list_del(&rh->list);
 	raw_spin_unlock_irqrestore(&rh->dom->release_lock, flags);
 	VTRACE("CB returned release_lock 0x%p\n", &rh->dom->release_lock);
-	TRACE("Timer 2: %llu.\n", litmus_clock());
 
 	/* call release callback */
 	rh->dom->release_jobs(rh->dom, &rh->heap);
 	/* WARNING: rh can be referenced from other CPUs from now on. */
-	TRACE("Timer 3: %llu.\n", litmus_clock());
+	TRACE("Timer 2: %llu \n", litmus_clock());
 
 	TS_RELEASE_END;
 
