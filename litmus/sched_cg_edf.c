@@ -905,7 +905,6 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	if (is_scheduled) {
 		TRACE("is_scheduled\n");
 		pd_add(&cgedf_pd_list, tgid);
-
 		
 		entry = &per_cpu(cgedf_cpu_entries, task_cpu(t));
 		BUG_ON(entry->scheduled);
@@ -1011,7 +1010,7 @@ static void cgedf_task_exit(struct task_struct * t)
 				// __add_ready(&cgedf, resumed_task);
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
-					sched_trace_task_release(resumed_task);
+					// sched_trace_task_release(resumed_task);
 					__add_ready(&cgedf, resumed_task);
 				}
 				else {
