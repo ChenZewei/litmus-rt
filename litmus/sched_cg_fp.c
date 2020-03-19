@@ -257,8 +257,6 @@ static noinline void unlink(struct task_struct* t)
 }
 
 static noinline int is_constrained(struct task_struct *task) {
-	// cpu_entry_t *entry;
-	// int tgid, cpu;
 	int tgid;
 	int parallel_degree = 0;
 	if(!task)
@@ -266,28 +264,9 @@ static noinline int is_constrained(struct task_struct *task) {
 	BUG_ON(!task);
 	tgid = task->tgid;
 
-	// TRACE_TASK(task, "Checking constraint...\n");
-
 	parallel_degree = get_active_num(&cgfp_pd_list, tgid);
-
-	// for (cpu = 0; cpu < NR_CPUS; cpu++) {
-	// for_each_online_cpu(cpu) {
-	// 	entry = &per_cpu(cgfp_cpu_entries, cpu);
-	// 	TRACE_TASK(task, "CPU[%d] is executing:", cpu);
-	// 	if (entry->scheduled != NULL) {
-	// 	TRACE_TASK(task, "task[PID %d TGID %d]\n", entry->scheduled->pid, entry->scheduled->tgid);
-	// 		if (tgid == entry->scheduled->tgid)
-	// 			parallel_degree++;
-	// 	} else {
-	// 	TRACE_TASK(task, "none.\n");
-	// 	}
-	// }
-	// TRACE_TASK(task, "task PID:%d\n",task->pid);
-	// TRACE_TASK(task, "task TGID:%d\n", task->tgid);
-	// TRACE_TASK(task, "task PD:%d\n", parallel_degree);
-	// TRACE_TASK(task, "task CPD:%d\n",task->rt_param.task_params.constrained_parallel_degree);		
+	
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
-	// return 0;
 }
 
 /* preempt - force a CPU to reschedule
@@ -303,26 +282,27 @@ static void preempt(cpu_entry_t *entry)
 static noinline void requeue(struct task_struct* task)
 {
 	int tgid = task->tgid;
+	int curr_tgid;
 	pd_node* node;
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
+	curr_tgid = task->tgid;
 
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
+		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
+	} else {
+		/* it has got to wait */
 		if (is_constrained(task)) {
-			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
+			node = find_pd_node_in_list(&cgfp_pd_list, curr_tgid);
+			// BUG_ON(!node);
 			if (!is_cq_exist(&(node->queue), task)) {
 				cq_enqueue(&(node->queue), task);
 			}
 		} else {
-			pd_add(&cgfp_pd_list, tgid);
-			fp_prio_add(&cgfp.ready_queue, task, get_priority(task));
-			// __add_ready(&cgfp.ready_queue, task);
+			pd_add(&cgfp_pd_list, curr_tgid);
+			add_release(&cgfp.domain, task);
 		}
-	}
-	else {
-		/* it has got to wait */
-		add_release(&cgfp.domain, task);
 	}
 }
 
@@ -409,33 +389,9 @@ static noinline void cgfp_job_arrival(struct task_struct* task)
 static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
-	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
-	struct task_struct* task;
-	pd_node* node;
-	// cons_queue* c_queue;
-
 	raw_spin_lock_irqsave(&cgfp_lock, flags);
-	
-	while (bh_node) {
-		task = bheap2task(bh_node);
-		// BUG_ON(!task);
-	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
-		if (is_constrained(task)) {
-	// TRACE("Constrained. Task enqueues to the constrained queue.\n");
-			node = find_pd_node_in_list(&cgfp_pd_list, task->tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), task)) {
-				cq_enqueue(&(node->queue), task);
-			}
-		} else {
-			pd_add(&cgfp_pd_list, task->tgid);
-			fp_prio_add(&cgfp.ready_queue, task, get_priority(task));
-			// __add_ready(&cgfp.ready_queue, task);
-		}
-		bh_node = bheap_take(rt->order, tasks);
-	}
-	// bheap_init(tasks);
-	// __merge_ready(rt, tasks);
+
+	__merge_ready(rt, tasks);
 	check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&cgfp_lock, flags);
@@ -445,32 +401,40 @@ static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 static noinline void curr_job_completion(int forced)
 {
 	struct task_struct *t = current;
-	// int tgid;
+	int tgid;
 	pd_node* node;
 	struct task_struct* resumed_task;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
-
-	// tgid = t->tgid;	
+	tgid = t->tgid;	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
-	pd_sub(&cgfp_pd_list, t->tgid);
-	if (!is_constrained(t)) {
-		node = find_pd_node_in_list(&cgfp_pd_list, t->tgid);
-		BUG_ON(!node);
-		resumed_task = cq_dequeue(&(node->queue));
-		if (resumed_task) {
-			pd_add(&cgfp_pd_list, resumed_task->tgid);
-			fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-		}
-	}
 
 	/* set flags */
 	tsk_rt(t)->completed = 0;
 	/* prepare for next period */
 	prepare_for_next_period(t);
-	if (is_early_releasing(t) || is_released(t, litmus_clock()))
+	if (is_early_releasing(t) || is_released(t, litmus_clock())) {
 		sched_trace_task_release(t);
+	} else {
+		pd_sub(&cgfp_pd_list, t->tgid);
+		if (!is_constrained(t)) {
+			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
+			BUG_ON(!node);
+			resumed_task = cq_dequeue(&(node->queue));
+			if (resumed_task) {
+				pd_add(&cgfp_pd_list, resumed_task->tgid);
+				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
+					sched_trace_task_release(resumed_task);
+					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+				}
+				else {
+					add_release(&cgfp.domain, resumed_task);
+				}
+			}
+		}
+	}
+		
 	/* unlink */
 	unlink(t);
 	/* requeue
@@ -555,16 +519,6 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	/* If a task blocks we have no choice but to reschedule.
 	 */
 	if (blocks) {
-		pd_sub(&cgfp_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgfp_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgfp_pd_list, resumed_task->tgid);
-				fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-			}
-		}
 		unlink(entry->scheduled);
 	}
 
@@ -574,16 +528,6 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	 * hurt.
 	 */
 	if (np && (out_of_time || preempt || sleep)) {
-		pd_sub(&cgfp_pd_list, entry->scheduled->tgid);
-		if (!is_constrained(entry->scheduled)) {
-			node = find_pd_node_in_list(&cgfp_pd_list, entry->scheduled->tgid);
-			BUG_ON(!node);
-			resumed_task = cq_dequeue(&(node->queue));
-			if (resumed_task) {
-				pd_add(&cgfp_pd_list, resumed_task->tgid);
-				fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-			}
-		}
 		unlink(entry->scheduled);
 		request_exit_np(entry->scheduled);
 	}
@@ -641,7 +585,6 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 
 
 	return next;
-	// return NULL;
 }
 
 
@@ -674,6 +617,7 @@ static void cgfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	pd_task_release(&cgfp_pd_list, cgfp_pd_stack, tgid);
 
 	if (is_scheduled) {
+		pd_add(&cgfp_pd_list, tgid);
 		entry = &per_cpu(cgfp_cpu_entries, task_cpu(t));
 		BUG_ON(entry->scheduled);
 
@@ -752,12 +696,12 @@ static void cgfp_task_exit(struct task_struct * t)
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
 				pd_add(&cgfp_pd_list, resumed_task->tgid);
-				fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-				// __add_ready(&cgfp, resumed_task);
+				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
+					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+				} else {
+					add_release(&cgfp.domain, resumed_task);
+				}
 			}
-	// 		else {
-	// TRACE("No constrained task.\n");
-	// 		}
 		}
 	}
 	
