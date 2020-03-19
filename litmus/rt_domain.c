@@ -64,7 +64,7 @@ static enum hrtimer_restart on_release_timer(struct hrtimer *timer)
 
 	TRACE("Checking release time.\n");
 
-	TS_RELEASE_START;
+	// TS_RELEASE_START;
 
 
 	TRACE("Timer 1: %llu.\n", litmus_clock());
@@ -82,7 +82,7 @@ static enum hrtimer_restart on_release_timer(struct hrtimer *timer)
 	/* WARNING: rh can be referenced from other CPUs from now on. */
 	TRACE("Timer 3: %llu.\n", litmus_clock());
 
-	TS_RELEASE_END;
+	// TS_RELEASE_END;
 
 	VTRACE("on_release_timer(0x%p) ends.\n", timer);
 

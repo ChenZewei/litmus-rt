@@ -357,7 +357,7 @@ static cpu_entry_t* cgedf_get_nearest_available_cpu(cpu_entry_t *start)
 /* check for any necessary preemptions */
 static void check_for_preemptions(void)
 {
-	TRACE("check_for_preemptions()\n");
+	// TRACE("check_for_preemptions()\n");
 	struct task_struct *task;
 	cpu_entry_t *last;
 
@@ -410,67 +410,6 @@ static void check_for_preemptions(void)
 	}
 }
 
-static void check_for_preemption(struct task_struct* task)
-{
-	TRACE("check_for_preemptions()\n");
-	cpu_entry_t *last;
-
-
-#ifdef CONFIG_PREFER_LOCAL_LINKING
-	cpu_entry_t *local;
-
-	/* Before linking to other CPUs, check first whether the local CPU is
-	 * idle. */
-	local = this_cpu_ptr(&cgedf_cpu_entries);
-	// if (!task)
-	// task  = __peek_ready(&cgedf);
-
-	if (task && !local->linked
-#ifdef CONFIG_RELEASE_MASTER
-	    && likely(local->cpu != cgedf.release_master)
-#endif
-		) {
-		TRACE_TASK(task, "linking to local CPU %d to avoid IPI\n", local->cpu);
-		link_task_to_cpu(task, local);
-		preempt(local);
-	} else
-#endif
-  {
-		last = lowest_prio_cpu();
-		/* preemption necessary */
- 
-		if (last->linked) {
-			if (task && (!is_realtime(last->linked) || edf_higher_prio(task, last->linked))) {
-				TRACE("check_for_preemptions: attempting to link task %d to %d\n",
-							task->pid, last->cpu);
-
-#ifdef CONFIG_SCHED_CPU_AFFINITY
-				{
-					cpu_entry_t *affinity =
-							cgedf_get_nearest_available_cpu(
-								&per_cpu(cgedf_cpu_entries, task_cpu(task)));
-					if (affinity)
-						last = affinity;
-					else if (requeue_preempted_job(last->linked))
-						requeue(last->linked);
-				}
-#else
-				if (requeue_preempted_job(last->linked))
-					requeue(last->linked);
-#endif
-
-				link_task_to_cpu(task, last);
-				preempt(last);
-			}
-		} else {
-			if (task && (!is_realtime(last->scheduled) || edf_higher_prio(task, last->scheduled))) {
-				link_task_to_cpu(task, last);
-				preempt(last);
-			}
-		}
-	}
-}
-
 /* cgedf_job_arrival: task is either resumed or released */
 static noinline void cgedf_job_arrival(struct task_struct* task)
 {
@@ -509,137 +448,15 @@ static void POT(struct bheap_node* root) {
 		if (root->child) 
 			TRACE("  child task [%d]", bheap2task(root->child)->pid);
 		TRACE("\n");
-		// if (is_constrained(task)) {
-		// 	node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-		// 	// BUG_ON(!node);
-		// 	if (!is_cq_exist(&(node->queue), task)) {
-		// 		cq_enqueue(&(node->queue), task);
-		// 	}
-		// 	// root->is_constrained = 1;
-		// 	root->degree = NOT_IN_HEAP;
-		// } else {
-		// 	pd_add(&cgedf_pd_list, curr_tgid);
-		// 	// root->is_constrained = 0;
-		// }
-	}
-}
-
-static void POT_constrained(rt_domain_t* rt, struct bheap* tasks, struct bheap_node* root) {
-	struct task_struct* task;
-	pd_node* node;
-	int curr_tgid;
-	if (!root)
-		return;
-	else {
-		if (root->child)
-			POT_constrained(rt, tasks, root->child);
-
-
-		if (root->next)
-			POT_constrained(rt, tasks, root->next);
-
-			
-		task = bheap2task(root);
-		// TRACE("Task [%d] in heap.\n", task->pid);
-		curr_tgid = task->tgid;
-		if (bheap_node_in_heap(root))
-			TRACE("Task [%d] [%d] in heap.", task->pid, curr_tgid);
-		else
-			TRACE("Task [%d] [%d] not in heap.", task->pid, curr_tgid);
-		if (root->parent) 
-			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
-		if (root->next) 
-			TRACE("  brother task [%d]", bheap2task(root->next)->pid);
-		if (root->child) 
-			TRACE("  child task [%d]", bheap2task(root->child)->pid);
-		TRACE("\n");
-		if (is_constrained(task)) {
-			node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-			// BUG_ON(!node);
-			if (!is_cq_exist(&(node->queue), task)) {
-				cq_enqueue(&(node->queue), task);
-			}
-			// root->is_constrained = 1;
-			// if (root == tasks->min)
-			// 	tasks->min = NULL;
-			root->degree = NOT_IN_HEAP;
-			// bheap_delete(rt->order, tasks, root);
-		} else {
-			pd_add(&cgedf_pd_list, curr_tgid);
-			// root->is_constrained = 0;
-		}
 	}
 }
 
 static void cgedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
-	TRACE("cgedf_release_jobs()\n");
 	unsigned long flags;
-	// struct bheap_node* bh_node;
-	// struct bheap_node* bh_node = bheap_take(rt->order, tasks);
-	// struct bheap_node* temp;
-	// struct task_struct* task;
-	// struct task_struct* temp_task;
-	// pd_node* node;
-	// int last_constrained_tgid = MAX_INT, curr_tgid;
-	// cons_queue* c_queue;
 	TRACE("Tasks release.\n");
-
 	raw_spin_lock_irqsave(&cgedf_lock, flags);
 
-	// temp = tasks->head;
-	// TRACE("POT constrained.\n");
-	// POT_constrained(rt, tasks, temp);
-	// temp = tasks->head;
-	// TRACE("POT.\n");
-	// POT(temp);
-
-	// bh_node = bheap_take(rt->order, tasks);
-	
-  // TRACE("Deal with released tasks: %llu.\n", litmus_clock());
-	// while (bh_node) {
-	// 	task = bheap2task(bh_node);
-	// 	curr_tgid = task->tgid;
-	// 	// if (bh_node->parent) 
-	// 	// 	TRACE("Task [%d]'s parent task [%d].\n", task->pid, bheap2task(bh_node->parent)->pid);
-	// 	// if (bh_node->next) 
-	// 	// 	TRACE("Task [%d]'s brother task [%d].\n", task->pid, bheap2task(bh_node->next)->pid);
-	// 	// if (bh_node->child) 
-	// 	// 	TRACE("Task [%d]'s child task [%d].\n", task->pid, bheap2task(bh_node->child)->pid);
-	// 	// BUG_ON(!task);
-	// TRACE_TASK(task, "Task [%d] [%d] releases.\n", task->pid, curr_tgid);
-  // // TRACE("Get a released task: %llu.\n", litmus_clock());
-	// // 	if (last_constrained_tgid == curr_tgid || is_constrained(task)) {
-	// // TRACE_TASK(task, "Task enqueues to the constrained queue.\n");
-  // // // TRACE("Add task to constrained queue: %llu.\n", litmus_clock());
-	// // 		node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-	// // 		// BUG_ON(!node);
-	// // 		if (!is_cq_exist(&(node->queue), task)) {
-	// // 			cq_enqueue(&(node->queue), task);
-	// // 		}
-	// // 		last_constrained_tgid = curr_tgid;
-	// // 	} else {
-  // // // TRACE("Add task to ready queue: %llu.\n", litmus_clock());
-	// // 		pd_add(&cgedf_pd_list, curr_tgid);
-	// 	node = find_pd_node_in_list(&cgedf_pd_list, curr_tgid);
-	// 	if (!is_cq_exist(&(node->queue), task)) {
-
-	// TRACE_TASK(task, "Not constrained.\n");
-	// 		__add_ready(&cgedf, task);
-	// 	}
-	// // 		// check_for_preemption(task);
-	// // 	}
-  // // TRACE("Finish adding at: %llu.\n", litmus_clock());
-	// 	bh_node = bheap_take(rt->order, tasks);
-	// }
-
-
-	// temp = rt->ready_queue.head;
-	// TRACE("Ready queue.\n");
-	// POT(temp);
-
-  // TRACE("Finish releasing: %llu.\n", litmus_clock());
-	// bheap_init(tasks);
 	__merge_ready(rt, tasks);
 	check_for_preemptions();
 	
@@ -665,19 +482,14 @@ static noinline void curr_job_completion(int forced)
 	/* prepare for next period */
 	prepare_for_next_period(t);
 	if (is_early_releasing(t) || is_released(t, litmus_clock())) {
-TRACE_TASK(t, "Still needs to run.\n");
 		sched_trace_task_release(t);
 	}	else {
 		pd_sub(&cgedf_pd_list, t->tgid);
 		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
 				// TS_RELEASE_START
-				// pd_add(&cgedf_pd_list, resumed_task->tgid);
-				// cgedf_job_arrival(resumed_task);
-				// __add_ready(&cgedf, resumed_task);
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					sched_trace_task_release(resumed_task);
@@ -695,9 +507,8 @@ TRACE_TASK(t, "Still needs to run.\n");
 	unlink(t);
 	/* requeue
 	 * But don't requeue a blocking task. */
-	if (is_current_running()) {
+	if (is_current_running())
 		cgedf_job_arrival(t);
-	}
 }
 
 
@@ -724,14 +535,9 @@ TRACE_TASK(t, "Still needs to run.\n");
  */
 static struct task_struct* cgedf_schedule(struct task_struct * prev)
 {
-	// TRACE("cgedf_schedule()\n");
 	cpu_entry_t* entry = this_cpu_ptr(&cgedf_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
-	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
-	struct task_struct* temp = NULL;
-	pd_node* node;
-	struct task_struct* resumed_task;
 
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
@@ -777,18 +583,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	/* If a task blocks we have no choice but to reschedule.
 	 */
 	if (blocks) {
-
-		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		// if (!is_constrained(entry->scheduled)) {
-		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-		// 	BUG_ON(!node);
-		// 	resumed_task = cq_dequeue(&(node->queue));
-		// 	if (resumed_task) {
-		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
-		// 		__add_ready(&cgedf, resumed_task);
-		// 	}
-		// }
-
 		unlink(entry->scheduled);
 	}
 
@@ -798,18 +592,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 	 * hurt.
 	 */
 	if (np && (out_of_time || preempt || sleep)) {
-
-		// pd_sub(&cgedf_pd_list, entry->scheduled->tgid);
-		// if (!is_constrained(entry->scheduled)) {
-		// 	node = find_pd_node_in_list(&cgedf_pd_list, entry->scheduled->tgid);
-		// 	BUG_ON(!node);
-		// 	resumed_task = cq_dequeue(&(node->queue));
-		// 	if (resumed_task) {
-		// 		pd_add(&cgedf_pd_list, resumed_task->tgid);
-		// 		__add_ready(&cgedf, resumed_task);
-		// 	}
-		// }
-
 		unlink(entry->scheduled);
 		request_exit_np(entry->scheduled);
 	}
@@ -867,7 +649,6 @@ static struct task_struct* cgedf_schedule(struct task_struct * prev)
 
 
 	return next;
-	// return NULL;
 }
 
 
@@ -891,7 +672,6 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
 	TRACE("cgedf_task_new()\n");
 	unsigned long 		flags;
-	pd_node* node;
 	cpu_entry_t* 		entry;
 	int tgid = t->tgid;
 
@@ -937,11 +717,8 @@ static void cgedf_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 static void cgedf_task_wake_up(struct task_struct *task)
 {
-	TRACE("cgedf_task_wake_up()\n");
 	unsigned long flags;
 	lt_t now;
-	pd_node* node;
-	int tgid = task->tgid;
 
 	TRACE_TASK(task, "wake_up at %llu\n", litmus_clock());
 
@@ -950,26 +727,12 @@ static void cgedf_task_wake_up(struct task_struct *task)
 	if (is_sporadic(task) && is_tardy(task, now)) {
 		inferred_sporadic_job_release_at(task, now);
 	}
-
-	// if (is_constrained(task)) {	
-	// 	node = find_pd_node_in_list(&cgedf_pd_list, tgid);
-	// 	// BUG_ON(!node);
-	// 	if (!is_cq_exist(&(node->queue), task)) {
-	// 		cq_enqueue(&(node->queue), task);
-	// 	}
-	// } else {
-	// 	// pd_add(&cgedf_pd_list, tgid);
-	// 	// add_release(&cgedf, task);
-	// 	cgedf_job_arrival(task);
-	// }
-
 	cgedf_job_arrival(task);
 	raw_spin_unlock_irqrestore(&cgedf_lock, flags);
 }
 
 static void cgedf_task_block(struct task_struct *t)
 {
-	TRACE("cgedf_task_block()\n");
 	unsigned long flags;
 
 	TRACE_TASK(t, "block at %llu\n", litmus_clock());
@@ -1005,16 +768,11 @@ static void cgedf_task_exit(struct task_struct * t)
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
 				// TS_RELEASE_START
-				// pd_add(&cgedf_pd_list, resumed_task->tgid);
-				// cgedf_job_arrival(resumed_task);
-				// __add_ready(&cgedf, resumed_task);
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
-					// sched_trace_task_release(resumed_task);
 					__add_ready(&cgedf, resumed_task);
 				}
 				else {
-				/* it has got to wait */
 					add_release(&cgedf, resumed_task);
 				}
 				// TS_RELEASE_END

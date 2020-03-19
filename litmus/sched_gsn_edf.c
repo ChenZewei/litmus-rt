@@ -286,7 +286,7 @@ static void check_for_preemptions(void)
 	struct task_struct *task;
 	cpu_entry_t *last;
 
-	TRACE("Timer 11: %llu.\n", litmus_clock());
+	// TRACE("Timer 11: %llu.\n", litmus_clock());
 
 #ifdef CONFIG_PREFER_LOCAL_LINKING
 	cpu_entry_t *local;
@@ -308,13 +308,13 @@ static void check_for_preemptions(void)
 	}
 #endif
 
-  TRACE("Timer 22: %llu.\n", litmus_clock());
+  // TRACE("Timer 22: %llu.\n", litmus_clock());
 	for (last = lowest_prio_cpu();
 	     edf_preemption_needed(&gsnedf, last->linked);
 	     last = lowest_prio_cpu()) {
 		/* preemption necessary */
 
-	TRACE("Timer 33: %llu.\n", litmus_clock());
+	// TRACE("Timer 33: %llu.\n", litmus_clock());
 		task = __take_ready(&gsnedf);
 		TRACE("check_for_preemptions: attempting to link task %d to %d\n",
 		      task->pid, last->cpu);
@@ -338,14 +338,13 @@ static void check_for_preemptions(void)
 		preempt(last);
 	}
 
-	TRACE("Timer 44: %llu.\n", litmus_clock());
+	// TRACE("Timer 44: %llu.\n", litmus_clock());
 }
 
 /* gsnedf_job_arrival: task is either resumed or released */
 static noinline void gsnedf_job_arrival(struct task_struct* task)
 {
 	BUG_ON(!task);
-
 	requeue(task);
 	check_for_preemptions();
 }
@@ -360,7 +359,6 @@ static void gsnedf_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	check_for_preemptions();
 
 	raw_spin_unlock_irqrestore(&gsnedf_lock, flags);
-	TRACE("Finish tasks releasing.\n");
 }
 
 /* caller holds gsnedf_lock */
