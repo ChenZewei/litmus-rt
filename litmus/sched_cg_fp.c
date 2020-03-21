@@ -282,7 +282,6 @@ static void preempt(cpu_entry_t *entry)
  */
 static noinline void requeue(struct task_struct* task)
 {
-	int tgid = task->tgid;
 	int curr_tgid;
 	pd_node* node;
 	BUG_ON(!task);
@@ -440,13 +439,14 @@ static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 /* caller holds cgfp_lock */
 static noinline void curr_job_completion(int forced)
 {
-	struct task_struct *t = current;
 	int tgid;
 	pd_node* node;
-	struct task_struct* resumed_task;
+	struct task_struct *t = current;
+	struct task_struct *resumed_task;
 	BUG_ON(!t);
-	sched_trace_task_completion(t, forced);
 	tgid = t->tgid;	
+	sched_trace_task_completion(t, forced);
+
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 
@@ -457,7 +457,7 @@ static noinline void curr_job_completion(int forced)
 	if (is_early_releasing(t) || is_released(t, litmus_clock())) {
 		sched_trace_task_release(t);
 	} else {
-		pd_sub(&cgfp_pd_list, t->tgid);
+		pd_sub(&cgfp_pd_list, tgid);
 		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			BUG_ON(!node);
@@ -511,10 +511,7 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
-	struct task_struct* temp = NULL;
-	pd_node* node;
-	struct task_struct* resumed_task;
-
+	
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
 	 * The release master never schedules any real-time tasks.
