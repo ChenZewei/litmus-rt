@@ -422,12 +422,17 @@ static void POT(struct bheap_node* root) {
 static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
+	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
+	struct task_struct* task;
+
 	raw_spin_lock_irqsave(&cgfp_lock, flags);
 
-	__merge_ready(rt, tasks);
+	while (bh_node) {
+		task = bheap2task(bh_node);
+    fp_prio_add(&gfp.ready_queue, task, get_priority(task));
+		bh_node = bheap_take(rt->order, tasks);
+	}
 	check_for_preemptions();
-
-	POT(rt->ready_queue.head);
 	
 	raw_spin_unlock_irqrestore(&cgfp_lock, flags);
 }
