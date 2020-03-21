@@ -265,6 +265,7 @@ static noinline int is_constrained(struct task_struct *task) {
 	tgid = task->tgid;
 
 	parallel_degree = get_active_num(&cgfp_pd_list, tgid);
+	TRACE_TASK(task, "parallel degree: %d\n", parallel_degree);
 	
 	return (parallel_degree >= task->rt_param.task_params.constrained_parallel_degree);
 }
