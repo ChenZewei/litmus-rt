@@ -151,11 +151,6 @@ static int cpu_lower_prio(struct bheap_node *_a, struct bheap_node *_b)
 	return fp_higher_prio(b->linked, a->linked);
 }
 
-int fp_ready_order(struct bheap_node* a, struct bheap_node* b)
-{
-	return fp_higher_prio(bheap2task(a), bheap2task(b));
-}
-
 /* update_cpu_position - Move the cpu entry to the correct place to maintain
  *                       order in the cpu queue. Caller must hold gfp lock.
  */
@@ -557,7 +552,6 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
-	int tgid = t->tgid;
 
 	raw_spin_lock_irqsave(&gfp_lock, flags);
 
