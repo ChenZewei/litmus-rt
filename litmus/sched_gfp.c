@@ -369,7 +369,7 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 
 	while (!bheap_empty(tasks)) {
 		bh_node = bheap_take(fp_ready_order, tasks);
-		task = bheap2task(hn);
+		task = bheap2task(bh_node);
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 	}
 	check_for_preemptions();
