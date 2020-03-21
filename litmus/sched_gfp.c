@@ -376,23 +376,27 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 static noinline void curr_job_completion(int forced)
 {
 	struct task_struct *t = current;
-	BUG_ON(!t);
-	sched_trace_task_completion(t, forced);
+	// BUG_ON(!t);
+	if (t) {
+		sched_trace_task_completion(t, forced);
 
-	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
+		TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
-	/* set flags */
-	tsk_rt(t)->completed = 0;
-	/* prepare for next period */
-	prepare_for_next_period(t);
-	if (is_early_releasing(t) || is_released(t, litmus_clock()))
-		sched_trace_task_release(t);
-	/* unlink */
-	unlink(t);
-	/* requeue
-	 * But don't requeue a blocking task. */
-	if (is_current_running())
-		gfp_job_arrival(t);
+		/* set flags */
+		tsk_rt(t)->completed = 0;
+		/* prepare for next period */
+		prepare_for_next_period(t);
+		if (is_early_releasing(t) || is_released(t, litmus_clock()))
+			sched_trace_task_release(t);
+		/* unlink */
+		unlink(t);
+		/* requeue
+		* But don't requeue a blocking task. */
+		if (is_current_running())
+			gfp_job_arrival(t);
+	} else {
+		TRACE_("Void completion.\n");
+	}
 }
 
 
