@@ -386,33 +386,6 @@ static noinline void cgfp_job_arrival(struct task_struct* task)
 	check_for_preemptions();
 }
 
-static void POT(struct bheap_node* root) {
-	struct task_struct* task;
-	int curr_tgid;
-	if (!root)
-		return;
-	else {
-		if (root->child)
-			POT(root->child);
-		if (root->next)
-			POT(root->next);
-		task = bheap2task(root);
-		// TRACE("Task [%d] in heap.\n", task->pid);
-		curr_tgid = task->tgid;
-		if (bheap_node_in_heap(root))
-			TRACE("Task [%d] [%d] in heap.", task->pid, curr_tgid);
-		else
-			TRACE("Task [%d] [%d] not in heap.", task->pid, curr_tgid);
-		if (root->parent) 
-			TRACE("  parent task [%d]", bheap2task(root->parent)->pid);
-		if (root->next) 
-			TRACE("  brother task [%d]", bheap2task(root->next)->pid);
-		if (root->child) 
-			TRACE("  child task [%d]", bheap2task(root->child)->pid);
-		TRACE("\n");
-	}
-}
-
 static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;

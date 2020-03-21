@@ -262,13 +262,15 @@ static void preempt(cpu_entry_t *entry)
  */
 static noinline void requeue(struct task_struct* task)
 {
+	int tgid = task->tgid;
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
-	} else {
+	}
+	else {
 		/* it has got to wait */
 		add_release(&gfp.domain, task);
 	}
@@ -361,12 +363,16 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	struct task_struct* task;
 
 	raw_spin_lock_irqsave(&gfp_lock, flags);
-
+	
 	while (bh_node) {
 		task = bheap2task(bh_node);
+		// BUG_ON(!task);
+	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
     fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 		bh_node = bheap_take(rt->order, tasks);
 	}
+	// bheap_init(tasks);
+	// __merge_ready(rt, tasks);
 	check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
@@ -376,9 +382,12 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 static noinline void curr_job_completion(int forced)
 {
 	struct task_struct *t = current;
+	// int tgid;
+	struct task_struct* resumed_task;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
-	
+
+	// tgid = t->tgid;	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	/* set flags */
@@ -422,6 +431,7 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 	cpu_entry_t* entry = this_cpu_ptr(&gfp_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	struct task_struct* next = NULL;
+	struct task_struct* temp = NULL;
 
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
@@ -556,6 +566,7 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
+	int tgid = t->tgid;
 
 	raw_spin_lock_irqsave(&gfp_lock, flags);
 
@@ -623,6 +634,8 @@ static void gfp_task_block(struct task_struct *t)
 static void gfp_task_exit(struct task_struct * t)
 {
 	unsigned long flags;
+	int tgid = t->tgid;
+	struct task_struct* resumed_task;
 
 	/* unlink if necessary */
 	raw_spin_lock_irqsave(&gfp_lock, flags);
