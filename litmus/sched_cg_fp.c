@@ -388,19 +388,14 @@ static noinline void cgfp_job_arrival(struct task_struct* task)
 
 static void POT(struct bheap_node* root) {
 	struct task_struct* task;
-	pd_node* node;
 	int curr_tgid;
 	if (!root)
 		return;
 	else {
 		if (root->child)
 			POT(root->child);
-
-
 		if (root->next)
 			POT(root->next);
-
-			
 		task = bheap2task(root);
 		// TRACE("Task [%d] in heap.\n", task->pid);
 		curr_tgid = task->tgid;
@@ -511,7 +506,7 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
-	
+
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
 	 * The release master never schedules any real-time tasks.

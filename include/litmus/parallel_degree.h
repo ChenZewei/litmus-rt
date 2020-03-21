@@ -111,13 +111,13 @@ static void pd_task_release(pd_list* list, pd_node* pd_stack, int tgid) {
   pd_node* node = find_pd_node_in_list(list, tgid);
   if (node) {
     node->t_num++;
-    return NULL;
+    return;
   }
   node = find_pd_node_in_stack(pd_stack, tgid);
   if (!node) {
     node = get_node_in_stack(pd_stack);
     if (!node)
-      return NULL;
+      return;
     node->tgid = tgid;
     node->t_num++;
   }
@@ -135,8 +135,8 @@ static void pd_task_exit(pd_list* list, int tgid) {
 }
 
 static inline void pd_add(pd_list* list, int tgid) {
-  TRACE("pd_add\n");
   pd_node* node = find_pd_node_in_list(list, tgid);
+  TRACE("pd_add\n");
   if (node) {
     node->active_num++;
     // TRACE("Task [%d]: adding active num. Current AN: %d\n", tgid, node->active_num);
@@ -144,8 +144,8 @@ static inline void pd_add(pd_list* list, int tgid) {
 }
 
 static inline void pd_sub(pd_list* list, int tgid) {
-  TRACE("pd_sub\n");
   pd_node* node = find_pd_node_in_list(list, tgid);
+  TRACE("pd_sub\n");
   if (node) {
     if (0 < node->active_num)
       node->active_num--;
