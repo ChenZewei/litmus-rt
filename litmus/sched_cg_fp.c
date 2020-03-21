@@ -290,7 +290,7 @@ static noinline void requeue(struct task_struct* task)
 	curr_tgid = task->tgid;
 
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
-		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
+		fp_prio_add(&cgfp.ready_queue, task, get_priority(task));
 	} else {
 		/* it has got to wait */
 		if (is_constrained(task)) {
