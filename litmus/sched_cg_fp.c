@@ -133,7 +133,7 @@ static struct bheap_node cgfp_heap_node[NR_CPUS];
 static struct bheap      cgfp_cpu_heap;
 
 // static rt_domain_t cgfp;
-cgfp_domain_t cgfp;
+static cgfp_domain_t cgfp;
 #define cgfp_lock (cgfp.slock)
 
 static pd_node cgfp_pd_stack[MAX_STACK_NUM];
@@ -155,6 +155,11 @@ static int cpu_lower_prio(struct bheap_node *_a, struct bheap_node *_b)
 	 * the top of the heap.
 	 */
 	return fp_higher_prio(b->linked, a->linked);
+}
+
+int fp_ready_order(struct bheap_node* a, struct bheap_node* b)
+{
+	return fp_higher_prio(bheap2task(a), bheap2task(b));
 }
 
 /* update_cpu_position - Move the cpu entry to the correct place to maintain
@@ -389,15 +394,15 @@ static noinline void cgfp_job_arrival(struct task_struct* task)
 static void cgfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
-	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
+	struct bheap_node* bh_node;
 	struct task_struct* task;
 
 	raw_spin_lock_irqsave(&cgfp_lock, flags);
 
-	while (bh_node) {
-		task = bheap2task(bh_node);
+	while (!bheap_empty(tasks)) {
+		bh_node = bheap_take(fp_ready_order, tasks);
+		task = bheap2task(hn);
     fp_prio_add(&cgfp.ready_queue, task, get_priority(task));
-		bh_node = bheap_take(rt->order, tasks);
 	}
 	check_for_preemptions();
 	
@@ -422,9 +427,9 @@ static noinline void curr_job_completion(int forced)
 	tsk_rt(t)->completed = 0;
 	/* prepare for next period */
 	prepare_for_next_period(t);
-	if (is_early_releasing(t) || is_released(t, litmus_clock())) {
+	if (is_early_releasing(t) || is_released(t, litmus_clock()))
 		sched_trace_task_release(t);
-	} else {
+	else {
 		pd_sub(&cgfp_pd_list, tgid);
 		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
@@ -645,7 +650,6 @@ static void cgfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 	if (on_rq || is_scheduled)
 		cgfp_job_arrival(t);
-	
 	raw_spin_unlock_irqrestore(&cgfp_lock, flags);
 }
 

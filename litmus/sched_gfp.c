@@ -132,7 +132,7 @@ static struct bheap_node gfp_heap_node[NR_CPUS];
 static struct bheap      gfp_cpu_heap;
 
 // static rt_domain_t gfp;
-gfp_domain_t gfp;
+static gfp_domain_t gfp;
 #define gfp_lock (gfp.slock)
 
 /* Uncomment this if you want to see all scheduling decisions in the
@@ -149,6 +149,11 @@ static int cpu_lower_prio(struct bheap_node *_a, struct bheap_node *_b)
 	 * the top of the heap.
 	 */
 	return fp_higher_prio(b->linked, a->linked);
+}
+
+int fp_ready_order(struct bheap_node* a, struct bheap_node* b)
+{
+	return fp_higher_prio(bheap2task(a), bheap2task(b));
 }
 
 /* update_cpu_position - Move the cpu entry to the correct place to maintain
@@ -262,14 +267,12 @@ static void preempt(cpu_entry_t *entry)
  */
 static noinline void requeue(struct task_struct* task)
 {
-	int tgid = task->tgid;
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
-	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
+	if (is_early_releasing(task) || is_released(task, litmus_clock()))
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
-	}
 	else {
 		/* it has got to wait */
 		add_release(&gfp.domain, task);
@@ -283,7 +286,7 @@ static cpu_entry_t* gfp_get_nearest_available_cpu(cpu_entry_t *start)
 
 	get_nearest_available_cpu(affinity, start, gfp_cpu_entries,
 #ifdef CONFIG_RELEASE_MASTER
-			gfp.release_master,
+			gfp.domain.release_master,
 #else
 			NO_CPU,
 #endif
@@ -310,7 +313,7 @@ static void check_for_preemptions(void)
 
 	if (task && !local->linked
 #ifdef CONFIG_RELEASE_MASTER
-	    && likely(local->cpu != gfp.release_master)
+	    && likely(local->cpu != gfp.domain.release_master)
 #endif
 		) {
 		task = fp_prio_take(&gfp.ready_queue);
@@ -359,20 +362,16 @@ static noinline void gfp_job_arrival(struct task_struct* task)
 static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
 	unsigned long flags;
-	struct bheap_node* bh_node = bheap_take(rt->order, tasks);
+	struct bheap_node* bh_node;
 	struct task_struct* task;
 
 	raw_spin_lock_irqsave(&gfp_lock, flags);
-	
-	while (bh_node) {
-		task = bheap2task(bh_node);
-		// BUG_ON(!task);
-	// TRACE_TASK(task, "Task [%d] releases.\n", task->pid);
-    fp_prio_add(&gfp.ready_queue, task, get_priority(task));
-		bh_node = bheap_take(rt->order, tasks);
+
+	while (!bheap_empty(tasks)) {
+		bh_node = bheap_take(fp_ready_order, tasks);
+		task = bheap2task(hn);
+		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 	}
-	// bheap_init(tasks);
-	// __merge_ready(rt, tasks);
 	check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
@@ -382,12 +381,9 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 static noinline void curr_job_completion(int forced)
 {
 	struct task_struct *t = current;
-	// int tgid;
-	struct task_struct* resumed_task;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
 
-	// tgid = t->tgid;	
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
 
 	/* set flags */
@@ -431,7 +427,6 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 	cpu_entry_t* entry = this_cpu_ptr(&gfp_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	struct task_struct* next = NULL;
-	struct task_struct* temp = NULL;
 
 #ifdef CONFIG_RELEASE_MASTER
 	/* Bail out early if we are the release master.
@@ -476,9 +471,8 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 
 	/* If a task blocks we have no choice but to reschedule.
 	 */
-	if (blocks) {
+	if (blocks)
 		unlink(entry->scheduled);
-	}
 
 	/* Request a sys_exit_np() call if we would like to preempt but cannot.
 	 * We need to make sure to update the link structure anyway in case
@@ -500,16 +494,14 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 
 	/* Link pending task if we became unlinked.
 	 */
-	if (!entry->linked){
+	if (!entry->linked)
 		link_task_to_cpu(fp_prio_take(&gfp.ready_queue), entry);
-	}
 
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
-  // NULL != entry->linked &&
 	if ((!np || blocks) && 
-	    entry->linked != entry->scheduled ) {
+	    entry->linked != entry->scheduled) {
 		/* Schedule a linked job? */
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
@@ -543,7 +535,6 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 
 
 	return next;
-	// return NULL;
 }
 
 
@@ -578,7 +569,7 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 		BUG_ON(entry->scheduled);
 
 #ifdef CONFIG_RELEASE_MASTER
-		if (entry->cpu != gfp.release_master) {
+		if (entry->cpu != gfp.domain.release_master) {
 #endif
 			entry->scheduled = t;
 			tsk_rt(t)->scheduled_on = task_cpu(t);
@@ -596,7 +587,6 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 	if (on_rq || is_scheduled)
 		gfp_job_arrival(t);
-	
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
 }
 
@@ -634,8 +624,6 @@ static void gfp_task_block(struct task_struct *t)
 static void gfp_task_exit(struct task_struct * t)
 {
 	unsigned long flags;
-	int tgid = t->tgid;
-	struct task_struct* resumed_task;
 
 	/* unlink if necessary */
 	raw_spin_lock_irqsave(&gfp_lock, flags);
