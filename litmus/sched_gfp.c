@@ -395,7 +395,7 @@ static noinline void curr_job_completion(int forced)
 		if (is_current_running())
 			gfp_job_arrival(t);
 	} else {
-		TRACE_("Void completion.\n");
+		TRACE("Void completion.\n");
 	}
 }
 
