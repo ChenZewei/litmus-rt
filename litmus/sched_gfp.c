@@ -376,8 +376,8 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 static noinline void curr_job_completion(int forced)
 {
 	struct task_struct *t = current;
-	// BUG_ON(!t);
-	if (t) {
+	BUG_ON(!t);
+	// if (t) {
 		sched_trace_task_completion(t, forced);
 
 		TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
@@ -394,9 +394,9 @@ static noinline void curr_job_completion(int forced)
 		* But don't requeue a blocking task. */
 		if (is_current_running())
 			gfp_job_arrival(t);
-	} else {
-		TRACE("Void completion.\n");
-	}
+	// } else {
+	// 	TRACE("Void completion.\n");
+	// }
 }
 
 
