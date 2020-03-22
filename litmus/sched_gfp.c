@@ -760,6 +760,7 @@ static int __init init_gfp(void)
 	}
 	fp_domain_init(&gfp.domain, NULL, gfp_release_jobs);
 	fp_prio_queue_init(&gfp.ready_queue);
+	// fp_ready_list_init(&gfp.ready_queue);
 	return register_sched_plugin(&gfp_plugin);
 }
 
