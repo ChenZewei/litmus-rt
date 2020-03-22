@@ -117,6 +117,7 @@ DEFINE_PER_CPU(cpu_entry_t, gfp_cpu_entries);
 typedef struct {
 	rt_domain_t 		domain;
 	struct fp_prio_queue	ready_queue;
+	// struct fp_ready_list  ready_queue;
 /*
  * scheduling lock slock
  * protects the domain and serializes scheduling decisions
@@ -758,6 +759,7 @@ static int __init init_gfp(void)
 		bheap_node_init(&entry->hn, entry);
 	}
 	fp_domain_init(&gfp.domain, NULL, gfp_release_jobs);
+	fp_prio_queue_init(&gfp.ready_queue);
 	return register_sched_plugin(&gfp_plugin);
 }
 
