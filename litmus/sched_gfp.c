@@ -254,6 +254,7 @@ static noinline void unlink(struct task_struct* t)
  */
 static void preempt(cpu_entry_t *entry)
 {
+	BUG_ON(!entry);
 	preempt_if_preemptable(entry->scheduled, entry->cpu);
 }
 
@@ -263,6 +264,7 @@ static void preempt(cpu_entry_t *entry)
 static noinline void requeue(struct task_struct* task)
 {
 	BUG_ON(!task);
+	BUG_ON(task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
@@ -431,7 +433,7 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 	/* Bail out early if we are the release master.
 	 * The release master never schedules any real-time tasks.
 	 */
-	if (unlikely(gfp.release_master == entry->cpu)) {
+	if (unlikely(gfp.domain.release_master == entry->cpu)) {
 		sched_state_task_picked();
 		return NULL;
 	}
@@ -690,7 +692,7 @@ static long gfp_activate_plugin(void)
 
 	bheap_init(&gfp_cpu_heap);
 #ifdef CONFIG_RELEASE_MASTER
-	gfp.release_master = atomic_read(&release_master_cpu);
+	gfp.domain.release_master = atomic_read(&release_master_cpu);
 #endif
 
 	for_each_online_cpu(cpu) {
@@ -699,7 +701,7 @@ static long gfp_activate_plugin(void)
 		entry->linked    = NULL;
 		entry->scheduled = NULL;
 #ifdef CONFIG_RELEASE_MASTER
-		if (cpu != gfp.release_master) {
+		if (cpu != gfp.domain.release_master) {
 #endif
 			TRACE("GFP: Initializing CPU #%d.\n", cpu);
 			update_cpu_position(entry);

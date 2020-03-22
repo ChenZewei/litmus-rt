@@ -313,7 +313,7 @@ static cpu_entry_t* cgfp_get_nearest_available_cpu(cpu_entry_t *start)
 
 	get_nearest_available_cpu(affinity, start, cgfp_cpu_entries,
 #ifdef CONFIG_RELEASE_MASTER
-			cgfp.release_master,
+			cgfp.domain.release_master,
 #else
 			NO_CPU,
 #endif
@@ -340,7 +340,7 @@ static void check_for_preemptions(void)
 
 	if (task && !local->linked
 #ifdef CONFIG_RELEASE_MASTER
-	    && likely(local->cpu != cgfp.release_master)
+	    && likely(local->cpu != cgfp.domain.release_master)
 #endif
 		) {
 		task = fp_prio_take(&cgfp.ready_queue);
@@ -484,7 +484,7 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	/* Bail out early if we are the release master.
 	 * The release master never schedules any real-time tasks.
 	 */
-	if (unlikely(cgfp.release_master == entry->cpu)) {
+	if (unlikely(cgfp.domain.release_master == entry->cpu)) {
 		sched_state_task_picked();
 		return NULL;
 	}
@@ -523,9 +523,8 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 
 	/* If a task blocks we have no choice but to reschedule.
 	 */
-	if (blocks) {
+	if (blocks)
 		unlink(entry->scheduled);
-	}
 
 	/* Request a sys_exit_np() call if we would like to preempt but cannot.
 	 * We need to make sure to update the link structure anyway in case
@@ -547,16 +546,15 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 
 	/* Link pending task if we became unlinked.
 	 */
-	if (!entry->linked){
+	if (!entry->linked)
 		link_task_to_cpu(fp_prio_take(&cgfp.ready_queue), entry);
-	}
 
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
   // NULL != entry->linked &&
 	if ((!np || blocks) && 
-	    entry->linked != entry->scheduled ) {
+	    entry->linked != entry->scheduled) {
 		/* Schedule a linked job? */
 		if (entry->linked) {
 			entry->linked->rt_param.scheduled_on = entry->cpu;
@@ -627,7 +625,7 @@ static void cgfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 		BUG_ON(entry->scheduled);
 
 #ifdef CONFIG_RELEASE_MASTER
-		if (entry->cpu != cgfp.release_master) {
+		if (entry->cpu != cgfp.domain.release_master) {
 #endif
 			entry->scheduled = t;
 			tsk_rt(t)->scheduled_on = task_cpu(t);
@@ -771,7 +769,7 @@ static long cgfp_activate_plugin(void)
 	pd_stack_init(cgfp_pd_stack);
 	pd_list_init(&cgfp_pd_list);
 #ifdef CONFIG_RELEASE_MASTER
-	cgfp.release_master = atomic_read(&release_master_cpu);
+	cgfp.domain.release_master = atomic_read(&release_master_cpu);
 #endif
 
 	for_each_online_cpu(cpu) {
@@ -780,7 +778,7 @@ static long cgfp_activate_plugin(void)
 		entry->linked    = NULL;
 		entry->scheduled = NULL;
 #ifdef CONFIG_RELEASE_MASTER
-		if (cpu != cgfp.release_master) {
+		if (cpu != cgfp.domain.release_master) {
 #endif
 			TRACE("CG-FP: Initializing CPU #%d.\n", cpu);
 			update_cpu_position(entry);
