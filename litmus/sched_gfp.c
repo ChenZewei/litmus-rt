@@ -264,7 +264,6 @@ static void preempt(cpu_entry_t *entry)
  */
 static noinline void requeue(struct task_struct* task)
 {
-	printk("requeue() starts.\n");
 	BUG_ON(!task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
@@ -275,7 +274,6 @@ static noinline void requeue(struct task_struct* task)
 		/* it has got to wait */
 		add_release(&gfp.domain, task);
 	}
-	printk("requeue() ends.\n");
 }
 
 #ifdef CONFIG_SCHED_CPU_AFFINITY
@@ -298,7 +296,6 @@ static cpu_entry_t* gfp_get_nearest_available_cpu(cpu_entry_t *start)
 /* check for any necessary preemptions */
 static void check_for_preemptions(void)
 {
-	printk("check_for_preemptions() starts.\n");
 	struct task_struct *task;
 	cpu_entry_t *last;
 
@@ -349,7 +346,6 @@ static void check_for_preemptions(void)
 		link_task_to_cpu(task, last);
 		preempt(last);
 	}
-	printk("check_for_preemptions() ends.\n");
 }
 
 /* gfp_job_arrival: task is either resumed or released */
@@ -394,7 +390,6 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 /* caller holds gfp_lock */
 static noinline void curr_job_completion(int forced)
 {
-	printk("curr_job_completion() starts.\n");
 	struct task_struct *t = current;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
@@ -415,8 +410,6 @@ static noinline void curr_job_completion(int forced)
 	 * But don't requeue a blocking task. */
 	if (is_current_running())
 		gfp_job_arrival(t);
-
-	printk("curr_job_completion() ends.\n");
 }
 
 
@@ -443,7 +436,6 @@ static noinline void curr_job_completion(int forced)
  */
 static struct task_struct* gfp_schedule(struct task_struct * prev)
 {
-	// printk("gfp_schedule() starts.\n");
 	cpu_entry_t* entry = this_cpu_ptr(&gfp_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
 	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
@@ -555,7 +547,6 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 #endif
 
 
-	// printk("gfp_schedule() ends.\n");
 	return next;
 }
 
@@ -564,14 +555,12 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
  */
 static void gfp_finish_switch(struct task_struct *prev)
 {
-	// printk("gfp_finish_switch() ends.\n");
 	cpu_entry_t* 	entry = this_cpu_ptr(&gfp_cpu_entries);
 
 	entry->scheduled = is_realtime(current) ? current : NULL;
 #ifdef WANT_ALL_SCHED_EVENTS
 	TRACE_TASK(prev, "switched away from\n");
 #endif
-	// printk("gfp_finish_switch() ends.\n");
 }
 
 
@@ -579,7 +568,6 @@ static void gfp_finish_switch(struct task_struct *prev)
  */
 static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 {
-	printk("gfp_task_new() starts.\n");
 	unsigned long 		flags;
 	cpu_entry_t* 		entry;
 
@@ -613,13 +601,10 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 	if (on_rq || is_scheduled)
 		gfp_job_arrival(t);
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
-
-	printk("gfp_task_new() ends.\n");
 }
 
 static void gfp_task_wake_up(struct task_struct *task)
 {
-	printk("gfp_task_wake_up() starts.\n");
 	unsigned long flags;
 	lt_t now;
 
@@ -632,12 +617,10 @@ static void gfp_task_wake_up(struct task_struct *task)
 	}
 	gfp_job_arrival(task);
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
-	printk("gfp_task_wake_up() ends.\n");
 }
 
 static void gfp_task_block(struct task_struct *t)
 {
-	printk("gfp_task_block() starts.\n");
 	unsigned long flags;
 
 	TRACE_TASK(t, "block at %llu\n", litmus_clock());
@@ -648,13 +631,11 @@ static void gfp_task_block(struct task_struct *t)
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
 
 	BUG_ON(!is_realtime(t));
-	printk("gfp_task_block() ends.\n");
 }
 
 
 static void gfp_task_exit(struct task_struct * t)
 {
-	printk("gfp_task_exit() starts.\n");
 	unsigned long flags;
 
 	/* unlink if necessary */
@@ -670,7 +651,6 @@ static void gfp_task_exit(struct task_struct * t)
 
 	BUG_ON(!is_realtime(t));
         TRACE_TASK(t, "RIP\n");
-	printk("gfp_task_exit() ends.\n");
 }
 
 static long gfp_admit_task(struct task_struct* tsk)

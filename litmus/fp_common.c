@@ -103,7 +103,6 @@ void fp_domain_init(rt_domain_t* rt, check_resched_needed_t resched,
  */
 int fp_preemption_needed(struct fp_prio_queue *q, struct task_struct *t)
 {
-	printk("fp_preemption_needed() starts.\n");
 	struct task_struct *pending;
 
 	pending = fp_prio_peek(q);
@@ -113,7 +112,6 @@ int fp_preemption_needed(struct fp_prio_queue *q, struct task_struct *t)
 	if (!t)
 		return 1;
 
-	printk("fp_preemption_needed() ends.\n");
 	/* make sure to get non-rt stuff out of the way */
 	return !is_realtime(t) || fp_higher_prio(pending, t);
 }

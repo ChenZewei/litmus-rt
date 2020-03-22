@@ -57,45 +57,40 @@ static inline unsigned int fpq_find(struct fp_prio_queue* q)
 
 static inline void fp_prio_add(struct fp_prio_queue* q, struct task_struct* t, unsigned int index)
 {
-	printk("fp_prio_add() starts.\n");
+	printk("fp_prio_add() starts\n");
 	BUG_ON(index >= LITMUS_MAX_PRIORITY);
 	BUG_ON(bheap_node_in_heap(tsk_rt(t)->heap_node));
 
 	fpq_set(q, index);
 	bheap_insert(fp_ready_order, &q->queue[index], tsk_rt(t)->heap_node);
-	printk("fp_prio_add() ends.\n");
+
+	printk("fp_prio_add() ends\n");
 }
 
 static inline void fp_prio_remove(struct fp_prio_queue* q, struct task_struct* t, unsigned int index)
 {
-	printk("fp_prio_remove() starts.\n");
 	BUG_ON(!is_queued(t));
 
 	bheap_delete(fp_ready_order, &q->queue[index], tsk_rt(t)->heap_node);
 	if (likely(bheap_empty(&q->queue[index])))
 		fpq_clear(q, index);
-	printk("fp_prio_remove() ends.\n");
 }
 
 static inline struct task_struct* fp_prio_peek(struct fp_prio_queue* q)
 {
-	printk("fp_preemption_needed() starts.\n");
 	unsigned int idx = fpq_find(q);
 	struct bheap_node* hn;
 
 	if (idx < LITMUS_MAX_PRIORITY) {
 		hn = bheap_peek(fp_ready_order, &q->queue[idx]);
-	printk("fp_prio_peek() ends.\n");
 		return bheap2task(hn);
 	} else {
-	printk("fp_prio_peek() ends.\n");
 		return NULL;
 	}
 }
 
 static inline struct task_struct* fp_prio_take(struct fp_prio_queue* q)
 {
-	printk("fp_prio_take() starts.\n");
 	unsigned int idx = fpq_find(q);
 	struct bheap_node* hn;
 
@@ -103,11 +98,8 @@ static inline struct task_struct* fp_prio_take(struct fp_prio_queue* q)
 		hn = bheap_take(fp_ready_order, &q->queue[idx]);
 		if (likely(bheap_empty(&q->queue[idx])))
 			fpq_clear(q, idx);
-
-	printk("fp_prio_take() ends.\n");
 		return bheap2task(hn);
 	} else {
-	printk("fp_prio_take() ends.\n");
 		return NULL;
 	}
 }
