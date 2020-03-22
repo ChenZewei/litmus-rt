@@ -552,7 +552,6 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 	/* The final scheduling decision. Do we need to switch for some reason?
 	 * If linked is different from scheduled, then select linked as next.
 	 */
-  // NULL != entry->linked &&
 	if ((!np || blocks) && 
 	    entry->linked != entry->scheduled) {
 		/* Schedule a linked job? */

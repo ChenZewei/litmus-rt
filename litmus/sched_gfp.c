@@ -264,7 +264,6 @@ static void preempt(cpu_entry_t *entry)
 static noinline void requeue(struct task_struct* task)
 {
 	BUG_ON(!task);
-	BUG_ON(task);
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
