@@ -34,7 +34,7 @@ void fp_prio_queue_init(struct fp_prio_queue* q);
 static inline void fpq_set(struct fp_prio_queue* q, unsigned int index)
 {
 	unsigned long *word = q->bitmask + (index / BITS_PER_LONG);
-	unsigned lont tmp = 1 << ((index % BITS_PER_LONG)-1);
+	unsigned long tmp = 1 << ((index % BITS_PER_LONG)-1);
 	if ((*word) & tmp) {
 		TRACE("bit overlaps.\n");
 		while(1) {}
