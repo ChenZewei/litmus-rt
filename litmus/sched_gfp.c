@@ -268,6 +268,7 @@ static noinline void requeue(struct task_struct* task)
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
+	BUG_ON(1);
 	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 	} else {
