@@ -376,7 +376,6 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 /* caller holds gfp_lock */
 static noinline void curr_job_completion(int forced)
 {
-	int tgid;
 	struct task_struct *t = current;
 	BUG_ON(!t);
 	sched_trace_task_completion(t, forced);
