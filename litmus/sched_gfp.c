@@ -358,22 +358,31 @@ static noinline void gfp_job_arrival(struct task_struct* task)
 
 static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 {
+	printk("gfp_release_jobs() starts.\n");
 	unsigned long flags;
 	struct bheap_node* bh_node;
 	struct task_struct* task;
 
+	printk("1111.\n");
 	raw_spin_lock_irqsave(&gfp_lock, flags);
 
+	printk("2222.\n");
 	while (!bheap_empty(tasks)) {
+	printk("3333.\n");
 		bh_node = bheap_take(fp_ready_order, tasks);
 		task = bheap2task(bh_node);
 		BUG_ON(!task);
+	printk("4444.\n");
 		TRACE_TASK(task,"priority: %d.\n", get_priority(task));
     fp_prio_add(&gfp.ready_queue, task, get_priority(task));
+	printk("5555.\n");
 	}
+	printk("6666.\n");
 	check_for_preemptions();
 	
 	raw_spin_unlock_irqrestore(&gfp_lock, flags);
+
+	printk("gfp_release_jobs() ends.\n");
 }
 
 /* caller holds gfp_lock */
