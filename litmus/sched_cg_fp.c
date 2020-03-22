@@ -516,9 +516,9 @@ static struct task_struct* cgfp_schedule(struct task_struct * prev)
 			   "state:%d sig:%d\n",
 			   blocks, out_of_time, np, sleep, preempt,
 			   prev->state, signal_pending(prev));
-	if (entry->linked && preempt)
-		TRACE_TASK(prev, "will be preempted by %s/%d\n",
-			   entry->linked->comm, entry->linked->pid);
+	// if (entry->linked && preempt)
+	// 	TRACE_TASK(prev, "will be preempted by %s/%d\n",
+	// 		   entry->linked->comm, entry->linked->pid);
 
 
 	/* If a task blocks we have no choice but to reschedule.
