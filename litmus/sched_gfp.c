@@ -1,7 +1,7 @@
 /*
  * litmus/sched_gfp.c
  *
- * Implementation of the GFP scheduling algorithm.
+ * Implementation of the G-FP scheduling algorithm.
  *
  * This version uses the simple approach and serializes all scheduling
  * decisions by the use of a queue lock. This is probably not the
@@ -20,6 +20,7 @@
 #include <litmus/fp_common.h>
 #include <litmus/sched_trace.h>
 #include <litmus/trace.h>
+#include <litmus/parallel_degree.h>
 
 #include <litmus/preempt.h>
 #include <litmus/budget.h>
@@ -36,9 +37,9 @@
 
 #include <linux/module.h>
 
-/* Overview of GFP operations.
+/* Overview of G-FP operations.
  *
- * For a detailed explanation of GFP have a look at the FMLP paper. This
+ * For a detailed explanation of G-FP have a look at the FMLP paper. This
  * description only covers how the individual operations are implemented in
  * LITMUS.
  *
@@ -134,6 +135,7 @@ static struct bheap      gfp_cpu_heap;
 // static rt_domain_t gfp;
 static gfp_domain_t gfp;
 #define gfp_lock (gfp.slock)
+
 
 /* Uncomment this if you want to see all scheduling decisions in the
  * TRACE() log.
@@ -254,11 +256,10 @@ static noinline void unlink(struct task_struct* t)
  */
 static void preempt(cpu_entry_t *entry)
 {
-	BUG_ON(!entry);
 	preempt_if_preemptable(entry->scheduled, entry->cpu);
 }
 
-/* requeue - Put an unlinked task into GFP domain.
+/* requeue - Put an unlinked task into G-FP domain.
  *           Caller must hold gfp_lock.
  */
 static noinline void requeue(struct task_struct* task)
@@ -267,11 +268,11 @@ static noinline void requeue(struct task_struct* task)
 	/* sanity check before insertion */
 	BUG_ON(is_queued(task));
 
-	if (is_early_releasing(task) || is_released(task, litmus_clock()))
+	if (is_early_releasing(task) || is_released(task, litmus_clock())) {
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
-	else {
+	} else {
 		/* it has got to wait */
-		add_release(&gfp.domain, task);
+			dd_release(&gfp.domain, task);
 	}
 }
 
@@ -366,7 +367,7 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 	while (!bheap_empty(tasks)) {
 		bh_node = bheap_take(fp_ready_order, tasks);
 		task = bheap2task(bh_node);
-		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
+    fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 	}
 	check_for_preemptions();
 	
@@ -376,12 +377,13 @@ static void gfp_release_jobs(rt_domain_t* rt, struct bheap* tasks)
 /* caller holds gfp_lock */
 static noinline void curr_job_completion(int forced)
 {
+	int tgid;
 	struct task_struct *t = current;
 	BUG_ON(!t);
-	// if (t) {
 	sched_trace_task_completion(t, forced);
 
 	TRACE_TASK(t, "job_completion(forced=%d).\n", forced);
+
 
 	/* set flags */
 	tsk_rt(t)->completed = 0;
@@ -389,15 +391,13 @@ static noinline void curr_job_completion(int forced)
 	prepare_for_next_period(t);
 	if (is_early_releasing(t) || is_released(t, litmus_clock()))
 		sched_trace_task_release(t);
+		
 	/* unlink */
 	unlink(t);
 	/* requeue
-	* But don't requeue a blocking task. */
+	 * But don't requeue a blocking task. */
 	if (is_current_running())
 		gfp_job_arrival(t);
-	// } else {
-	// 	TRACE("Void completion.\n");
-	// }
 }
 
 
@@ -426,6 +426,7 @@ static struct task_struct* gfp_schedule(struct task_struct * prev)
 {
 	cpu_entry_t* entry = this_cpu_ptr(&gfp_cpu_entries);
 	int out_of_time, sleep, preempt, np, exists, blocks;
+	// int out_of_time, sleep, preempt, np, exists, blocks, constrained;
 	struct task_struct* next = NULL;
 
 #ifdef CONFIG_RELEASE_MASTER
@@ -562,6 +563,7 @@ static void gfp_task_new(struct task_struct* t, int on_rq, int is_scheduled)
 
 	/* setup job params */
 	release_at(t, litmus_clock());
+
 
 	if (is_scheduled) {
 		entry = &per_cpu(gfp_cpu_entries, task_cpu(t));
@@ -702,11 +704,11 @@ static long gfp_activate_plugin(void)
 #ifdef CONFIG_RELEASE_MASTER
 		if (cpu != gfp.domain.release_master) {
 #endif
-			TRACE("GFP: Initializing CPU #%d.\n", cpu);
+			TRACE("G-FP: Initializing CPU #%d.\n", cpu);
 			update_cpu_position(entry);
 #ifdef CONFIG_RELEASE_MASTER
 		} else {
-			TRACE("GFP: CPU %d is release master.\n", cpu);
+			TRACE("G-FP: CPU %d is release master.\n", cpu);
 		}
 #endif
 	}
@@ -724,7 +726,7 @@ static long gfp_deactivate_plugin(void)
 
 /*	Plugin object	*/
 static struct sched_plugin gfp_plugin __cacheline_aligned_in_smp = {
-	.plugin_name		= "GFP",
+	.plugin_name		= "G-FP",
 	.finish_switch		= gfp_finish_switch,
 	.task_new		= gfp_task_new,
 	.complete_job		= complete_job,
@@ -745,6 +747,8 @@ static int __init init_gfp(void)
 	cpu_entry_t *entry;
 
 	bheap_init(&gfp_cpu_heap);
+	// pd_stack_init(gfp_pd_stack);
+	// pd_list_init(&gfp_pd_list);
 	/* initialize CPU state */
 	for (cpu = 0; cpu < NR_CPUS; cpu++)  {
 		entry = &per_cpu(gfp_cpu_entries, cpu);
