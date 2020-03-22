@@ -20,7 +20,6 @@
 #include <litmus/fp_common.h>
 #include <litmus/sched_trace.h>
 #include <litmus/trace.h>
-#include <litmus/parallel_degree.h>
 
 #include <litmus/preempt.h>
 #include <litmus/budget.h>
@@ -272,7 +271,7 @@ static noinline void requeue(struct task_struct* task)
 		fp_prio_add(&gfp.ready_queue, task, get_priority(task));
 	} else {
 		/* it has got to wait */
-			dd_release(&gfp.domain, task);
+		add_release(&gfp.domain, task);
 	}
 }
 
