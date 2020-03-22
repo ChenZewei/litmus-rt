@@ -37,7 +37,6 @@ static inline void fpq_set(struct fp_prio_queue* q, unsigned int index)
 	unsigned long tmp = 1 << ((index % BITS_PER_LONG)-1);
 	if ((*word) & tmp) {
 		TRACE("bit overlaps.\n");
-		while(1) {}
 	}
 
 	__set_bit(index % BITS_PER_LONG, word);
