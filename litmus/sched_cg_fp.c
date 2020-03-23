@@ -252,7 +252,8 @@ static noinline void unlink(struct task_struct* t)
 		 * queue. We must remove it from the list in this
 		 * case.
 		 */
-		remove(&cgfp.domain, t);
+		// remove(&cgfp.domain, t);
+		fp_prio_remove(&gfp.ready_queue, t, get_priority(t));
 	}
 }
 
