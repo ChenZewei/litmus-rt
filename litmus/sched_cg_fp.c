@@ -253,7 +253,7 @@ static noinline void unlink(struct task_struct* t)
 		 * case.
 		 */
 		// remove(&cgfp.domain, t);
-		fp_prio_remove(&gfp.ready_queue, t, get_priority(t));
+		fp_prio_remove(&cgfp.ready_queue, t, get_priority(t));
 	}
 }
 
