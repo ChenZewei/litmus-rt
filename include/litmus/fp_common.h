@@ -57,14 +57,11 @@ static inline unsigned int fpq_find(struct fp_prio_queue* q)
 
 static inline void fp_prio_add(struct fp_prio_queue* q, struct task_struct* t, unsigned int index)
 {
-	printk("fp_prio_add() starts\n");
 	BUG_ON(index >= LITMUS_MAX_PRIORITY);
 	BUG_ON(bheap_node_in_heap(tsk_rt(t)->heap_node));
 
 	fpq_set(q, index);
 	bheap_insert(fp_ready_order, &q->queue[index], tsk_rt(t)->heap_node);
-
-	printk("fp_prio_add() ends\n");
 }
 
 static inline void fp_prio_remove(struct fp_prio_queue* q, struct task_struct* t, unsigned int index)
