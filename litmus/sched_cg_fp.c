@@ -438,6 +438,7 @@ static noinline void curr_job_completion(int forced)
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					sched_trace_task_release(resumed_task);
 					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+					check_for_preemptions();
 				}
 				else {
 					add_release(&cgfp.domain, resumed_task);
@@ -702,6 +703,7 @@ static void cgfp_task_exit(struct task_struct * t)
 				pd_add(&cgfp_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
+					check_for_preemptions();
 				} else {
 					add_release(&cgfp.domain, resumed_task);
 				}
