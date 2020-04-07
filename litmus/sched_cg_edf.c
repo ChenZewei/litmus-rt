@@ -447,7 +447,7 @@ static noinline void curr_job_completion(int forced)
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					sched_trace_task_release(resumed_task);
 					__add_ready(&cgedf, resumed_task);
-					check_for_preemptions();
+					// check_for_preemptions();
 				}
 				else {
 					add_release(&cgedf, resumed_task);
