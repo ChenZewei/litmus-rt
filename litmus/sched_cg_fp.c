@@ -443,6 +443,8 @@ static noinline void curr_job_completion(int forced)
 				else {
 					add_release(&cgfp.domain, resumed_task);
 				}
+			} else {
+				break;
 			}
 		}
 	}
@@ -695,11 +697,11 @@ static void cgfp_task_exit(struct task_struct * t)
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
 		pd_sub(&cgfp_pd_list, tgid);
-		if (!is_constrained(t)) {
+		while (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
-			while (resumed_task) {
+			if (resumed_task) {
 				pd_add(&cgfp_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
@@ -707,6 +709,8 @@ static void cgfp_task_exit(struct task_struct * t)
 				} else {
 					add_release(&cgfp.domain, resumed_task);
 				}
+			} else {
+				break;
 			}
 		}
 	}

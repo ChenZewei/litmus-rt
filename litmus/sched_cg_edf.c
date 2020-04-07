@@ -452,6 +452,8 @@ static noinline void curr_job_completion(int forced)
 				else {
 					add_release(&cgedf, resumed_task);
 				}
+			} else {
+				break;
 			}
 		}
 	}
@@ -722,6 +724,8 @@ static void cgedf_task_exit(struct task_struct * t)
 				} else {
 					add_release(&cgedf, resumed_task);
 				}
+			} else {
+				break;
 			}
 		}
 	}
