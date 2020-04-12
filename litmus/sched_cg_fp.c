@@ -443,9 +443,10 @@ static noinline void curr_job_completion(int forced)
 				else {
 					add_release(&cgfp.domain, resumed_task);
 				}
-			} else {
-				break;
 			}
+			//  else {
+			// 	break;
+			// }
 		}
 	}
 		
@@ -709,9 +710,10 @@ static void cgfp_task_exit(struct task_struct * t)
 				} else {
 					add_release(&cgfp.domain, resumed_task);
 				}
-			} else {
-				break;
 			}
+			//  else {
+			// 	break;
+			// }
 		}
 	}
 	
