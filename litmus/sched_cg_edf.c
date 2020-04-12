@@ -439,7 +439,7 @@ static noinline void curr_job_completion(int forced)
 		sched_trace_task_release(t);
 	}	else {
 		pd_sub(&cgedf_pd_list, t->tgid);
-		while (!is_constrained(t)) {
+		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
 			resumed_task = cq_dequeue(&(node->queue));
 			if (resumed_task) {
@@ -712,7 +712,7 @@ static void cgedf_task_exit(struct task_struct * t)
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
 		pd_sub(&cgedf_pd_list, tgid);
-		while (!is_constrained(t)) {
+		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgedf_pd_list, tgid);
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
@@ -720,7 +720,7 @@ static void cgedf_task_exit(struct task_struct * t)
 				pd_add(&cgedf_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					__add_ready(&cgedf, resumed_task);
-					check_for_preemptions();
+					// check_for_preemptions();
 				} else {
 					add_release(&cgedf, resumed_task);
 				}

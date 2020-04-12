@@ -429,7 +429,7 @@ static noinline void curr_job_completion(int forced)
 		sched_trace_task_release(t);
 	else {
 		pd_sub(&cgfp_pd_list, tgid);
-		while (!is_constrained(t)) {
+		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
@@ -697,7 +697,7 @@ static void cgfp_task_exit(struct task_struct * t)
 		tsk_rt(t)->scheduled_on = NO_CPU;
 		
 		pd_sub(&cgfp_pd_list, tgid);
-		while (!is_constrained(t)) {
+		if (!is_constrained(t)) {
 			node = find_pd_node_in_list(&cgfp_pd_list, tgid);
 			// BUG_ON(!node);
 			resumed_task = cq_dequeue(&(node->queue));
@@ -705,7 +705,7 @@ static void cgfp_task_exit(struct task_struct * t)
 				pd_add(&cgfp_pd_list, resumed_task->tgid);
 				if (is_early_releasing(resumed_task) || is_released(resumed_task, litmus_clock())) {
 					fp_prio_add(&cgfp.ready_queue, resumed_task, get_priority(resumed_task));
-					check_for_preemptions();
+					// check_for_preemptions();
 				} else {
 					add_release(&cgfp.domain, resumed_task);
 				}
