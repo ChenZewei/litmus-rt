@@ -3415,6 +3415,7 @@ static void __sched notrace __schedule(bool preempt)
 	sched_trace_task_switch_away(prev);
 
 	schedule_debug(prev);
+	TRACE("check point 1: %llu\n",litmus_clock()-start);
 
 	if (sched_feat(HRTICK))
 		hrtick_clear(rq);
@@ -3430,6 +3431,7 @@ static void __sched notrace __schedule(bool preempt)
 	smp_mb__before_spinlock();
 	raw_spin_lock(&rq->lock);
 	cookie = lockdep_pin_lock(&rq->lock);
+	TRACE("check point 2: %llu\n",litmus_clock()-start);
 
 	rq->clock_skip_update <<= 1; /* promote REQ to ACT */
 
@@ -3458,6 +3460,7 @@ static void __sched notrace __schedule(bool preempt)
 		}
 		switch_count = &prev->nvcsw;
 	}
+	TRACE("check point 3: %llu\n",litmus_clock()-start);
 
 	if (task_on_rq_queued(prev))
 		update_rq_clock(rq);
@@ -3466,6 +3469,7 @@ static void __sched notrace __schedule(bool preempt)
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
 	rq->clock_skip_update = 0;
+	TRACE("check point 4: %llu\n",litmus_clock()-start);
 
 	this_cpu_write(litmus_preemption_in_progress, false);
 
@@ -3477,8 +3481,8 @@ static void __sched notrace __schedule(bool preempt)
 		trace_sched_switch(preempt, prev, next);
 		end = litmus_clock();
 		period = end - start;
-		TRACE("TS_SCHED_END: %llu\n",end);
-		TRACE("TS_SCHED_PERIOD: %llu\n",period);
+		TRACE("TS_SCHED_END 1: %llu\n",end);
+		TRACE("TS_SCHED_PERIOD 1: %llu\n",period);
 		TS_SCHED_END(next);
 		TS_CXS_START(next);
 		rq = context_switch(rq, prev, next, cookie); /* unlocks the rq */
@@ -3487,8 +3491,8 @@ static void __sched notrace __schedule(bool preempt)
 		lockdep_unpin_lock(&rq->lock, cookie);
 		end = litmus_clock();
 		period = end - start;
-		TRACE("TS_SCHED_END: %llu\n",end);
-		TRACE("TS_SCHED_PERIOD: %llu\n",period);
+		TRACE("TS_SCHED_END 2: %llu\n",end);
+		TRACE("TS_SCHED_PERIOD 2: %llu\n",period);
 		TS_SCHED_END(prev);
 		raw_spin_unlock_irq(&rq->lock);
 	}
