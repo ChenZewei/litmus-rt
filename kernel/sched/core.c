@@ -3398,11 +3398,14 @@ static void __sched notrace __schedule(bool preempt)
 {
 	struct task_struct *prev, *next;
 	unsigned long *switch_count;
+	long long int start, end, period;
 	struct pin_cookie cookie;
 	struct rq *rq;
 	int cpu;
 
 	TS_SCHED_START;
+	start = litmus_clock();
+	TRACE("TS_SCHED_START: %llu\n",start);
 	sched_state_entered_schedule();
 
 	cpu = smp_processor_id();
@@ -3472,12 +3475,20 @@ static void __sched notrace __schedule(bool preempt)
 		++*switch_count;
 
 		trace_sched_switch(preempt, prev, next);
+		end = litmus_clock();
+		period = end - start;
+		TRACE("TS_SCHED_END: %llu\n",end);
+		TRACE("TS_SCHED_PERIOD: %llu\n",period);
 		TS_SCHED_END(next);
 		TS_CXS_START(next);
 		rq = context_switch(rq, prev, next, cookie); /* unlocks the rq */
 		TS_CXS_END(current);
 	} else {
 		lockdep_unpin_lock(&rq->lock, cookie);
+		end = litmus_clock();
+		period = end - start;
+		TRACE("TS_SCHED_END: %llu\n",end);
+		TRACE("TS_SCHED_PERIOD: %llu\n",period);
 		TS_SCHED_END(prev);
 		raw_spin_unlock_irq(&rq->lock);
 	}
